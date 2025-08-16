@@ -1,477 +1,13 @@
-<!DOCTYPE html> 
-<html lang="fr"> 
-<head> 
-  <meta charset="UTF-8"> 
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-  <title>Contrôleur Senelec - Gérez votre électricité</title> 
-  <link rel="stylesheet" 
-href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"> 
-  <style> 
-    * { 
-      margin: 0; 
-      padding: 0; 
-      box-sizing: border-box; 
-    } 
- 
-    body { 
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-      min-height: 100vh; 
-    } 
- 
-    .container { 
-      max-width: 1400px; 
-      margin: 0 auto; 
-      background: white; 
-      min-height: 100vh; 
-      display: flex; 
-      flex-direction: column; 
-    } 
- 
-    /* Header */ 
-    .header { 
-      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); 
-      color: white; 
-      padding: 20px 30px; 
-      display: flex; 
-      justify-content: space-between; 
-      align-items: center; 
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
-    } 
- 
-    .logo { 
-      font-size: 1.8em; 
-      font-weight: bold; 
-    } 
- 
-    .user-info { 
-      display: flex; 
-      align-items: center; 
-      gap: 15px; 
-    } 
- 
-    /* Navigation */ 
-    .nav { 
-      background: #f8f9fa; 
-      padding: 0; 
-      border-bottom: 1px solid #dee2e6; 
-    } 
- 
-    .nav-list { 
-      display: flex; 
-      list-style: none; 
-      margin: 0; 
-      padding: 0; 
-    } 
- 
-    .nav-item { 
-      flex: 1; 
-    } 
- 
-    .nav-link { 
-      display: flex; 
-      align-items: center; 
-      justify-content: center; 
-      gap: 8px; 
-      padding: 15px 20px; 
-      text-decoration: none; 
-      color: #495057; 
-      text-align: center; 
-      transition: all 0.3s; 
-      border-bottom: 3px solid transparent; 
-      font-weight: 500; 
-    } 
- 
-    .nav-link:hover, .nav-link.active { 
-      background: #667eea; 
-      color: white; 
-      border-bottom-color: #1e3c72; 
-    } 
- 
-    /* Main Content */ 
-    .main-content { 
-      flex: 1; 
-      padding: 30px; 
-    } 
- 
-    .page { 
-      display: none; 
-    } 
- 
-    .page.active { 
-      display: block; 
-    } 
- 
-    /* Cards and Components */ 
-    .card { 
-      background: white; 
-      border-radius: 12px; 
-      padding: 25px; 
-      margin-bottom: 25px; 
-      box-shadow: 0 5px 20px rgba(0,0,0,0.08); 
-      border-left: 5px solid #667eea; 
-    } 
- 
-    .card-header { 
-      display: flex; 
-      align-items: center; 
-      margin-bottom: 20px; 
-    } 
- 
-    .card-icon { 
-      font-size: 1.5em; 
-      margin-right: 15px; 
-      color: #667eea; 
-    } 
- 
-    .card-title { 
-      font-size: 1.5em; 
-      color: #1e3c72; 
-      margin: 0; 
-    } 
- 
-    /* Stats Grid */ 
-    .stats-grid { 
-      display: grid; 
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
-      gap: 20px; 
-      margin-bottom: 30px; 
-    } 
- 
-    .stat-card { 
-      background: linear-gradient(135deg, #667eea, #764ba2); 
-      color: white; 
-      padding: 25px; 
-      border-radius: 12px; 
-      text-align: center; 
-      position: relative; 
-      overflow: hidden; 
-    } 
- 
-    .stat-card::before { 
-      content: ""; 
-      position: absolute; 
-      top: -50%; 
-      right: -50%; 
-      width: 100px; 
-      height: 100px; 
-      background: rgba(255,255,255,0.1); 
-      border-radius: 50%; 
-    } 
- 
-    .stat-number { 
-      font-size: 2.5em; 
-      font-weight: bold; 
-      margin-bottom: 5px; 
-    } 
- 
-    .stat-label { 
-      font-size: 1em; 
-      opacity: 0.9; 
-    } 
- 
-    /* Forms */ 
-    .form-grid { 
-      display: grid; 
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
-      gap: 30px; 
-    } 
- 
-    .form-group { 
-      margin-bottom: 20px; 
-    } 
- 
-    .form-group label { 
-      display: block; 
-      margin-bottom: 8px; 
-      font-weight: 600; 
-      color: #333; 
-    } 
- 
-    .form-group input, .form-group select { 
-      width: 100%; 
-      padding: 12px; 
-      border: 2px solid #e1e5e9; 
-      border-radius: 8px; 
-      font-size: 16px; 
-      transition: border-color 0.3s; 
-    } 
- 
-    .form-group input:focus, .form-group select:focus { 
-      outline: none; 
-      border-color: #667eea; 
-    } 
- 
-    .help-text { 
-      background: #e8f4f8; 
-      border: 1px solid #bee5eb; 
-      border-radius: 8px; 
-      padding: 15px; 
-      margin-bottom: 20px; 
-      color: #0c5460; 
-      font-size: 0.95em; 
-    } 
- 
-    .help-text strong { 
-      color: #0a4b54; 
-    } 
- 
-    .example-box { 
-      background: #fff3cd; 
-      border: 1px solid #ffeaa7; 
-      border-radius: 8px; 
-      padding: 15px; 
-      margin: 15px 0; 
-      color: #856404; 
-    } 
- 
-    .btn { 
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-      color: white; 
-      padding: 15px 30px; 
-      border: none; 
-      border-radius: 8px; 
-      cursor: pointer; 
-      font-size: 16px; 
-      font-weight: 600; 
-      transition: transform 0.2s; 
-      display: inline-block; 
-      text-decoration: none; 
-    } 
- 
-    .btn:hover { 
-      transform: translateY(-2px); 
-    } 
- 
-    .btn-large { 
-      padding: 20px 40px; 
-      font-size: 18px; 
-      width: 100%; 
-      margin-bottom: 15px; 
-    } 
- 
-    /* Chart Container */ 
-    .chart-container { 
-      height: 300px; 
-      background: #f8f9fa; 
-      border-radius: 8px; 
-      display: flex; 
-      align-items: center; 
-      justify-content: center; 
-      color: #666; 
-      margin-bottom: 25px; 
-    } 
- 
-    /* Table */ 
-    .data-table { 
-      width: 100%; 
-      border-collapse: collapse; 
-      margin-top: 20px; 
-    } 
- 
-    .data-table th, 
-    .data-table td { 
-      padding: 15px; 
-      text-align: left; 
-      border-bottom: 1px solid #dee2e6; 
-    } 
- 
-    .data-table th { 
-      background: #f8f9fa; 
-      font-weight: 600; 
-      color: #495057; 
-    } 
- 
-    .data-table tr:hover { 
-      background: #f8f9fa; 
-    } 
- 
-    /* Quick Actions */ 
-    .quick-actions { 
-      display: grid; 
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
-      gap: 15px; 
-      margin-top: 30px; 
-    } 
- 
-    .quick-action { 
-      background: white; 
-      border: 2px solid #e9ecef; 
-      border-radius: 12px; 
-      padding: 20px; 
-      text-align: center; 
-      text-decoration: none; 
-      color: #495057; 
-      transition: all 0.3s; 
-    } 
- 
-    .quick-action:hover { 
-      border-color: #667eea; 
-      transform: translateY(-3px); 
-      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2); 
-    } 
- 
-    .quick-action-icon { 
-      font-size: 2.5em; 
-      margin-bottom: 10px; 
-      color: #667eea; 
-      transition: transform 0.3s, color 0.3s; 
-    } 
- 
-    .quick-action:hover .quick-action-icon { 
-      transform: scale(1.1); 
-      color: #764ba2; 
-    } 
- 
-    /* Alerts */ 
-    .alert { 
-      padding: 15px; 
-      border-radius: 8px; 
-      margin-bottom: 20px; 
-    } 
- 
-    .alert-info { 
-      background: #d1ecf1; 
-      border: 1px solid #bee5eb; 
-      color: #0c5460; 
-    } 
- 
-    .alert-warning { 
-      background: #fff3cd; 
-      border: 1px solid #ffeaa7; 
-      color: #856404; 
-    } 
- 
-    .alert-success { 
-      background: #d4edda; 
-      border: 1px solid #c3e6cb; 
-      color: #155724; 
-    } 
- 
-    .alert-error { 
-      background: #f8d7da; 
-      border: 1px solid #f5c6cb; 
-      color: #721c24; 
-    } 
- 
-    /* Code Reference */ 
-    .code-reference { 
-      display: grid; 
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
-      gap: 15px; 
-      margin-top: 20px; 
-    } 
- 
-    .code-item { 
-      background: #f8f9fa; 
-      border-left: 4px solid #667eea; 
-      padding: 15px; 
-      border-radius: 8px; 
-    } 
- 
-    .code-number { 
-      font-weight: bold; 
-      font-size: 1.2em; 
-      color: #1e3c72; 
-      margin-bottom: 5px; 
-    } 
- 
-    .code-description { 
-      color: #666; 
-      font-size: 0.9em; 
-    } 
-     /* Styles pour les nouvelles sections */
-.table-responsive {
-  overflow-x: auto;
-}
-
-.steps-list {
-  padding-left: 20px;
-  margin: 15px 0;
-}
-
-.steps-list li {
-  margin-bottom: 10px;
-}
-
-.code-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 15px;
-  margin-top: 20px;
-}
-
-.alert-levels {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 20px;
-}
-
-.alert-level {
-  padding: 12px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.alert-level.green {
-  background-color: #e8f5e9;
-  border-left: 4px solid #4caf50;
-}
-
-.alert-level.orange {
-  background-color: #fff3e0;
-  border-left: 4px solid #ff9800;
-}
-
-.alert-level.red {
-  background-color: #ffebee;
-  border-left: 4px solid #f44336;
-}
-
-.alert-level.emergency {
-  background-color: #fce4ec;
-  border-left: 4px solid #e91e63;
-}
-
-.alert-level .indicator {
-  font-weight: bold;
-  min-width: 120px;
-}
-
-.alert-level i {
-  margin-right: 8px;
-}
-
-    /* Responsive */ 
-    @media (max-width: 768px) { 
-      .header { 
-        flex-direction: column; 
-        gap: 15px; 
-        text-align: center; 
-      } 
- 
-      .nav-list { 
-        flex-direction: column; 
-      } 
- 
-      .main-content { 
-        padding: 20px; 
-      } 
- 
-      .stats-grid { 
-        grid-template-columns: 1fr; 
-      } 
- 
-      .form-grid { 
-        grid-template-columns: 1fr; 
-      } 
-    } 
-  </style> 
-</head> 
-<body> 
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contrôleur Senelec - Gérez votre électricité</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
 <div class="container"> 
   <!-- Header --> 
   <div class="header"> 
@@ -547,9 +83,7 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
           <h2 class="card-title">Conseil du jour</h2> 
         </div> 
         <div class="alert alert-info"> 
-          <strong><i class="fas fa-info-circle"></i> Astuce :</strong> <span 
-id="dailyTip">Débranchez vos appareils en veille pour économiser jusqu'à 10% sur votre 
-facture !</span> 
+          <strong><i class="fas fa-info-circle"></i> Astuce :</strong> <span id="dailyTip">Débranchez vos appareils en veille pour économiser jusqu'à 10% sur votre facture !</span> 
         </div> 
       </div> 
  
@@ -588,9 +122,7 @@ facture !</span>
           </div> 
  
           <div class="example-box"> 
-            <strong><i class="fas fa-lightbulb"></i> Exemple :</strong> Si votre compteur affiche 
-"1245.7 kWh" aujourd'hui et que la dernière fois c'était "1240.2 kWh", vous avez consommé 
-5.5 kWh. 
+            <strong><i class="fas fa-lightbulb"></i> Exemple :</strong> Si votre compteur affiche "1245.7 kWh" aujourd'hui et que la dernière fois c'était "1240.2 kWh", vous avez consommé 5.5 kWh. 
           </div> 
  
           <div class="form-group"> 
@@ -624,8 +156,7 @@ facture !</span>
           </div> 
  
           <div class="example-box"> 
-            <strong><i class="fas fa-lightbulb"></i> Exemple :</strong> Vous rechargez 5000 
-FCFA et recevez 45.2 kWh d'unités. 
+            <strong><i class="fas fa-lightbulb"></i> Exemple :</strong> Vous rechargez 5000 FCFA et recevez 45.2 kWh d'unités. 
           </div> 
  
           <div class="form-group"> 
@@ -672,8 +203,7 @@ FCFA et recevez 45.2 kWh d'unités.
         </div> 
  
         <div class="chart-container"> 
-          <div><i class="fas fa-chart-line"></i> Graphique d'évolution de la consommation (à 
-venir)</div> 
+          <div><i class="fas fa-chart-line"></i> Graphique d'évolution de la consommation (à venir)</div> 
         </div> 
       </div> 
  
@@ -705,36 +235,35 @@ venir)</div>
  
     <!-- Settings Page --> 
     <div id="settings" class="page"> 
-        <!-- Nouvelle section : Vérification Type Compteur -->
-<div class="card">
-  <div class="card-header">
-    <div class="card-icon"><i class="fas fa-question-circle"></i></div>
-    <h2 class="card-title">Comment connaître son type de compteur ?</h2>
-  </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon"><i class="fas fa-question-circle"></i></div>
+          <h2 class="card-title">Comment connaître son type de compteur ?</h2>
+        </div>
 
-  <div class="alert alert-warning">
-    <strong><i class="fas fa-exclamation-triangle"></i> Important :</strong> Ces informations déterminent vos tarifs applicables
-  </div>
+        <div class="alert alert-warning">
+          <strong><i class="fas fa-exclamation-triangle"></i> Important :</strong> Ces informations déterminent vos tarifs applicables
+        </div>
 
-  <ol class="steps-list">
-    <li>Composez <strong>809</strong> sur votre compteur</li>
-    <li>Appuyez sur la touche verte</li>
-    <li>Notez le code affiché :
-      <ul>
-        <li><strong>01</strong> : Usage domestique petite puissance</li>
-        <li><strong>02</strong> : Usage domestique moyenne puissance</li>
-        <li><strong>04</strong> : Usage professionnel petite puissance</li>
-        <li><strong>05</strong> : Usage professionnel moyenne puissance</li>
-      </ul>
-    </li>
-  </ol>
+        <ol class="steps-list">
+          <li>Composez <strong>809</strong> sur votre compteur</li>
+          <li>Appuyez sur la touche verte</li>
+          <li>Notez le code affiché :
+            <ul>
+              <li><strong>01</strong> : Usage domestique petite puissance</li>
+              <li><strong>02</strong> : Usage domestique moyenne puissance</li>
+              <li><strong>04</strong> : Usage professionnel petite puissance</li>
+              <li><strong>05</strong> : Usage professionnel moyenne puissance</li>
+            </ul>
+          </li>
+        </ol>
 
-  <div class="example-box">
-    <strong><i class="fas fa-lightbulb"></i> Conseil :</strong> Si le code ne correspond pas à votre usage actuel, contactez votre agence Senelec pour régularisation.
-  </div>
-</div>
+        <div class="example-box">
+          <strong><i class="fas fa-lightbulb"></i> Conseil :</strong> Si le code ne correspond pas à votre usage actuel, contactez votre agence Senelec pour régularisation.
+        </div>
+      </div>
+      
       <div class="form-grid"> 
-
         <!-- Tarifs --> 
         <div class="card"> 
           <div class="card-header"> 
@@ -743,19 +272,15 @@ venir)</div>
           </div> 
  
           <div class="alert alert-warning"> 
-            <strong><i class="fas fa-exclamation-triangle"></i> Important :</strong> Vérifiez ces 
-tarifs sur vos factures Senelec car ils peuvent changer. Ces valeurs sont utilisées pour 
-calculer vos coûts. 
+            <strong><i class="fas fa-exclamation-triangle"></i> Important :</strong> Vérifiez ces tarifs sur vos factures Senelec car ils peuvent changer. Ces valeurs sont utilisées pour calculer vos coûts. 
           </div> 
  
           <div class="form-group"> 
-            <label><i class="fas fa-layer-group"></i> Tranche 1 (0-150 kWh) - Prix en 
-FCFA/kWh</label> 
+            <label><i class="fas fa-layer-group"></i> Tranche 1 (0-150 kWh) - Prix en FCFA/kWh</label> 
             <input type="number" id="tariff1" step="0.01" value="91.17"> 
           </div> 
           <div class="form-group"> 
-            <label><i class="fas fa-layer-group"></i> Tranche 2 (151+ kWh) - Prix en 
-FCFA/kWh</label> 
+            <label><i class="fas fa-layer-group"></i> Tranche 2 (151+ kWh) - Prix en FCFA/kWh</label> 
             <input type="number" id="tariff2" step="0.01" value="136.49"> 
           </div> 
  
@@ -777,8 +302,7 @@ FCFA/kWh</label>
           </div> 
  
           <div class="help-text"> 
-            <strong><i class="fas fa-info-circle"></i> Comment utiliser :</strong> Tapez ces 
-codes sur votre compteur puis appuyez sur la touche verte pour voir les informations. 
+            <strong><i class="fas fa-info-circle"></i> Comment utiliser :</strong> Tapez ces codes sur votre compteur puis appuyez sur la touche verte pour voir les informations. 
           </div> 
  
           <div class="code-reference"> 
@@ -807,432 +331,112 @@ codes sur votre compteur puis appuyez sur la touche verte pour voir les informat
               <div class="code-description">Voir les alarmes de crédit faible</div> 
             </div>    
             <div class="code-item">
-               <div class="code-number">808</div>
-               <div class="code-description">Consomation instantané</div>
+              <div class="code-number">808</div>
+              <div class="code-description">Consommation instantanée</div>
             </div>
-    
-   
-  
-    <div class="code-item">
-      <div class="code-number">812</div>
-      <div class="code-description">Désactiver alarme sonore</div>
-    </div>
-  </div>
+            <div class="code-item">
+              <div class="code-number">812</div>
+              <div class="code-description">Désactiver alarme sonore</div>
+            </div>
           </div> 
         </div>
 
-<!-- Nouvelle section : Grille Tarifaire Officielle -->
-<div class="card">
-  <div class="card-header">
-    <div class="card-icon"><i class="fas fa-file-invoice-dollar"></i></div>
-    <h2 class="card-title">Grille Tarifaire Officielle (2024)</h2>
-  </div>
+        <!-- Grille Tarifaire Officielle -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon"><i class="fas fa-file-invoice-dollar"></i></div>
+            <h2 class="card-title">Grille Tarifaire Officielle (2024)</h2>
+          </div>
 
-  <div class="alert alert-info">
-    <strong><i class="fas fa-info-circle"></i> Mise à jour :</strong> Tarifs approuvés par arrêté ministériel n°1234 du 15/01/2024
-  </div>
+          <div class="alert alert-info">
+            <strong><i class="fas fa-info-circle"></i> Mise à jour :</strong> Tarifs approuvés par arrêté ministériel n°1234 du 15/01/2024
+          </div>
 
-  <h3><i class="fas fa-home"></i> Usage Domestique</h3>
-  <div class="table-responsive">
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>Type Compteur</th>
-          <th>1ère Tranche (FCFA/kWh)</th>
-          <th>2ème Tranche (FCFA/kWh)</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>Petite Puissance (DPP)</td>
-          <td>91,17</td>
-          <td>136,49</td>
-        </tr>
-        <tr>
-          <td>Moyenne Puissance (DMP)</td>
-          <td>111,23</td>
-          <td>143,54</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-  <h3><i class="fas fa-home"></i> Usage Professionnel </h3>
-  <div class="table-responsive">
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>Type Compteur</th>
-          <th>1ère Tranche (FCFA/kWh)</th>
-          <th>2ème Tranche (FCFA/kWh)</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>Petite Puissance (PPP)</td>
-          <td>163,81</td>
-          <td>189,84</td>
-        </tr>
-        <tr>
-          <td>Moyenne Puissance (PMP)</td>
-          <td>165,01</td>
-          <td>191,01</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+          <h3><i class="fas fa-home"></i> Usage Domestique</h3>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Type Compteur</th>
+                  <th>1ère Tranche (FCFA/kWh)</th>
+                  <th>2ème Tranche (FCFA/kWh)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Petite Puissance (DPP)</td>
+                  <td>91,17</td>
+                  <td>136,49</td>
+                </tr>
+                <tr>
+                  <td>Moyenne Puissance (DMP)</td>
+                  <td>111,23</td>
+                  <td>143,54</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <h3><i class="fas fa-home"></i> Usage Professionnel</h3>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Type Compteur</th>
+                  <th>1ère Tranche (FCFA/kWh)</th>
+                  <th>2ème Tranche (FCFA/kWh)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Petite Puissance (PPP)</td>
+                  <td>163,81</td>
+                  <td>189,84</td>
+                </tr>
+                <tr>
+                  <td>Moyenne Puissance (PMP)</td>
+                  <td>165,01</td>
+                  <td>191,01</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
 
-</div>
+        <!-- Niveaux d'Alerte -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon"><i class="fas fa-bell"></i></div>
+            <h2 class="card-title">Signaux d'Alerte du Compteur</h2>
+          </div>
 
-
-
-
-
-<!-- Nouvelle section : Niveaux d'Alerte -->
-<div class="card">
-  <div class="card-header">
-    <div class="card-icon"><i class="fas fa-bell"></i></div>
-    <h2 class="card-title">Signaux d'Alerte du Compteur</h2>
-  </div>
-
-<div class="alert-levels">
-    <div class="alert-level green">
-      <div class="indicator"><i class="fas fa-circle"></i> LED Verte</div>
-      <div class="description">Crédit suffisant (>30kWh)</div>
-    </div>
-    <div class="alert-level orange">
-      <div class="indicator"><i class="fas fa-circle"></i> LED Rouge fixe</div>
-      <div class="description">Crédit faible (15-30kWh)</div>
-    </div>
-    <div class="alert-level red">
-      <div class="indicator"><i class="fas fa-exclamation-triangle"></i> LED Rouge clignotante</div>
-      <div class="description">Crédit très faible (5-15kWh)</div>
-    </div>
-    <div class="alert-level emergency">
-      <div class="indicator"><i class="fas fa-bell"></i> Alarme sonore + LED</div>
-      <div class="description">Crédit critique (<5kWh)</div>
-    </div>
-  </div>
-    </div>
-
-  </div>  
+          <div class="alert-levels">
+            <div class="alert-level green">
+              <div class="indicator"><i class="fas fa-circle"></i> LED Verte</div>
+              <div class="description">Crédit suffisant (>30kWh)</div>
+            </div>
+            <div class="alert-level orange">
+              <div class="indicator"><i class="fas fa-circle"></i> LED Rouge fixe</div>
+              <div class="description">Crédit faible (15-30kWh)</div>
+            </div>
+            <div class="alert-level red">
+              <div class="indicator"><i class="fas fa-exclamation-triangle"></i> LED Rouge clignotante</div>
+              <div class="description">Crédit très faible (5-15kWh)</div>
+            </div>
+            <div class="alert-level emergency">
+              <div class="indicator"><i class="fas fa-bell"></i> Alarme sonore + LED</div>
+              <div class="description">Crédit critique (<5kWh)</div>
+            </div>
+          </div>
+        </div>
       </div> 
  
       <div id="settingsMessage" class="alert alert-success" style="display: none;"> 
         <i class="fas fa-check-circle"></i> Paramètres sauvegardés avec succès ! 
       </div> 
-    
-
-
+    </div>
+  </div>
 </div>
 
-<style>
-/* Styles pour les nouvelles sections */
-.table-responsive {
-  overflow-x: auto;
-}
-
-.steps-list {
-  padding-left: 20px;
-  margin: 15px 0;
-}
-
-.steps-list li {
-  margin-bottom: 10px;
-}
-
-.code-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 15px;
-  margin-top: 20px;
-}
-
-.alert-levels {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 20px;
-}
-
-.alert-level {
-  padding: 12px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.alert-level.green {
-  background-color: #e8f5e9;
-  border-left: 4px solid #4caf50;
-}
-
-.alert-level.orange {
-  background-color: #fff3e0;
-  border-left: 4px solid #ff9800;
-}
-
-.alert-level.red {
-  background-color: #ffebee;
-  border-left: 4px solid #f44336;
-}
-
-.alert-level.emergency {
-  background-color: #fce4ec;
-  border-left: 4px solid #e91e63;
-}
-
-.alert-level .indicator {
-  font-weight: bold;
-  min-width: 120px;
-}
-
-.alert-level i {
-  margin-right: 8px;
-}
-</style>
-</div> 
- 
-<script> 
-// Data storage   
-let meterReadings = [];   
-let recharges = [];   
-let settings = {   
-  tariff1: 91.17,   
-  tariff2: 136.49,   
-  tva: 18   
-};   
- 
-// Daily tips   
-const tips = [   
-  "Débranchez vos appareils en veille pour économiser jusqu'à 10% sur votre facture !",   
-    "Utilisez des ampoules LED : elles consomment 80% moins d'énergie.",   
-  "Réglez votre climatiseur à 25°C pour optimiser la consommation.",   
-  "Éteignez les lumières quand vous quittez une pièce.",   
-  "Utilisez le lave-linge avec de l'eau froide quand c'est possible.",   
-  "Dégivrez régulièrement votre réfrigérateur pour améliorer son efficacité."   
-];   
- 
-// Initialize   
-document.addEventListener('DOMContentLoaded', function() { 
-  initializeDates(); 
-  updateDashboard(); 
-  showRandomTip(); 
-}); 
- 
-function initializeDates() { 
-  const today = new Date().toISOString().split("T")[0]; 
-  document.getElementById("meterDate").value = today; 
-  document.getElementById("rechargeDate").value = today; 
- 
-  // Update current month display 
-  const monthNames = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", 
-    "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"]; 
-  const now = new Date(); 
-  document.getElementById("currentMonth").textContent =  
-    monthNames[now.getMonth()] + " " + now.getFullYear(); 
-} 
- 
-function showPage(pageId, event) { 
-  // Hide all pages 
-  document.querySelectorAll('.page').forEach(page => { 
-    page.classList.remove('active'); 
-  }); 
-   
-  // Remove active class from all nav links 
-  document.querySelectorAll('.nav-link').forEach(link => { 
-    link.classList.remove('active'); 
-  }); 
-   
-  // Show selected page 
-  document.getElementById(pageId).classList.add('active'); 
- 
-  // Add active class to selected nav link if event exists 
-  if (event) { 
-    event.target.classList.add('active'); 
-  } 
- 
-  // Update page-specific content 
-  if (pageId === 'dashboard') { 
-    updateDashboard(); 
-  } else if (pageId === 'history') { 
-    updateHistoryTable(); 
-  } 
-} 
- 
-function calculateCost(kwh) { 
-  const tariff1 = settings.tariff1; 
-  const tariff2 = settings.tariff2; 
-  const tva = settings.tva / 100; 
- 
-  let cost = 0; 
- 
-  if (kwh <= 150) { 
-    cost = kwh * tariff1; 
-  } else { 
-    cost = (150 * tariff1) + ((kwh - 150) * tariff2); 
-  } 
- 
-  return cost * (1 + tva); 
-} 
- 
-function addMeterReading() { 
-  const date = document.getElementById('meterDate').value; 
-  const reading = parseFloat(document.getElementById('meterReading').value); 
- 
-  if (!date || !reading || reading <= 0) { 
-    showError('Veuillez remplir tous les champs avec des valeurs valides.'); 
-    return; 
-  } 
- 
-  // Calculate consumption if we have a previous reading 
-  let consumption = 0; 
-  if (meterReadings.length > 0) { 
-    const lastReading = meterReadings[meterReadings.length - 1]; 
-    consumption = reading - lastReading.reading; 
- 
-    if (consumption < 0) { 
-      showError('La nouvelle valeur doit être supérieure à la précédente.'); 
-      return; 
-    } 
-  } 
- 
-  meterReadings.push({ 
-    date: date, 
-    reading: reading, 
-    consumption: consumption, 
-    cost: calculateCost(consumption) 
-  }); 
- 
-  // Sort by date 
-  meterReadings.sort((a, b) => new Date(a.date) - new Date(b.date)); 
- 
-  // Reset form 
-  document.getElementById('meterReading').value = ""; 
-  document.getElementById('meterDate').value = new Date().toISOString().split('T')[0]; 
- 
-  showMessage('inputMessage'); 
-  updateDashboard(); 
-} 
- 
-function addRecharge() { 
-  const date = document.getElementById('rechargeDate').value; 
-  const amount = parseFloat(document.getElementById('rechargeAmount').value); 
-  const units = parseFloat(document.getElementById('rechargeUnits').value); 
- 
-  if (!date || !amount || !units || amount <= 0 || units <= 0) { 
-    showError('Veuillez remplir tous les champs avec des valeurs valides.'); 
-    return; 
-  } 
- 
-  recharges.push({ 
-    date: date, 
-    amount: amount, 
-    units: units, 
-    rate: amount / units 
-  }); 
- 
-  // Sort by date 
-  recharges.sort((a, b) => new Date(a.date) - new Date(b.date)); 
- 
-  // Reset form 
-  document.getElementById('rechargeAmount').value = ""; 
-  document.getElementById('rechargeUnits').value = ""; 
-  document.getElementById('rechargeDate').value = new Date().toISOString().split('T')[0]; 
- 
-  showMessage('inputMessage'); 
-} 
- 
-function saveTariffs() { 
-  settings.tariff1 = parseFloat(document.getElementById('tariff1').value); 
-  settings.tariff2 = parseFloat(document.getElementById('tariff2').value); 
-  settings.tva = parseFloat(document.getElementById('tva').value); 
- 
-  showMessage('settingsMessage'); 
-  updateDashboard(); 
-} 
- 
-function showMessage(messageId) { 
-  const message = document.getElementById(messageId); 
-  message.style.display = 'block'; 
-  setTimeout(() => { 
-    message.style.display = 'none'; 
-  }, 3000); 
-} 
- 
-function showError(message) { 
-  const errorDiv = document.createElement('div'); 
-  errorDiv.className = 'alert alert-error'; 
-  errorDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`; 
-  document.body.appendChild(errorDiv); 
-  setTimeout(() => errorDiv.remove(), 3000); 
-} 
- 
-function showRandomTip() { 
-  const randomIndex = Math.floor(Math.random() * tips.length); 
-  document.getElementById('dailyTip').textContent = tips[randomIndex]; 
-} 
- 
-function updateDashboard() { 
-  const currentMonth = new Date().getMonth(); 
-  const currentYear = new Date().getFullYear(); 
- 
-  // Filter readings for current month 
-  const monthReadings = meterReadings.filter(reading => { 
-    const readingDate = new Date(reading.date); 
-    return readingDate.getMonth() === currentMonth &&  
-           readingDate.getFullYear() === currentYear; 
-  }); 
- 
-  const totalConsumption = monthReadings.reduce((sum, reading) => sum + 
-reading.consumption, 0); 
-  const totalCost = monthReadings.reduce((sum, reading) => sum + reading.cost, 0); 
-  const daysCount = monthReadings.length; 
-  const dailyAverage = daysCount > 0 ? (totalConsumption / daysCount).toFixed(2) : 0; 
- 
-  // Update dashboard stats 
-  document.getElementById('monthConsumption').textContent = 
-totalConsumption.toFixed(2); 
-  document.getElementById('monthCost').textContent = Math.round(totalCost); 
-  document.getElementById('dailyAverage').textContent = dailyAverage; 
-  document.getElementById('daysInMonth').textContent = daysCount; 
-} 
- 
-function updateHistoryTable() { 
-  const tbody = document.getElementById('historyTableBody'); 
-  tbody.innerHTML = ''; 
- 
-  if (meterReadings.length === 0) { 
-    tbody.innerHTML = ` 
-      <tr> 
-        <td colspan="4" style="text-align: center; padding: 40px; color: #666;"> 
-          <i class="fas fa-database"></i> Aucune donnée enregistrée 
-        </td> 
-      </tr> 
-    `; 
-    return; 
-  } 
- 
-  meterReadings.forEach(reading => { 
-    const row = document.createElement('tr'); 
-    row.innerHTML = ` 
-      <td>${reading.date}</td> 
-      <td>${reading.consumption.toFixed(2)}</td> 
-      <td>${Math.round(reading.cost)}</td> 
-      <td> 
-        <button class="btn" style="padding: 5px 10px; font-size: 14px;"> 
-          <i class="fas fa-trash-alt"></i> 
-        </button> 
-      </td> 
-    `; 
-tbody.appendChild(row); 
-}); 
-} 
-function updateAnalysis() { 
-// To be implemented with chart integration 
-const period = document.getElementById('analysisPeriod').value; 
-console.log("Analyzing period:", period); 
-} 
-</script> 
-</body> 
+<script src="script.js"></script>
+</body>
 </html>
