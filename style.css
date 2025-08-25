@@ -436,6 +436,11 @@ body {
 .alert-level i {
   margin-right: 8px;
 }
+.chart-container {
+  position: relative;
+  height: 300px;
+  padding: 10px;
+}
 /* ==================== RESPONSIVE DESIGN ==================== */
 
 /* Responsive */

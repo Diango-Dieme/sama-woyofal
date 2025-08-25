@@ -6,6 +6,7 @@
   <title>Contrôleur Senelec - Gérez votre électricité</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 <div class="container"> 
@@ -73,7 +74,8 @@
           <h2 class="card-title">Évolution de votre consommation</h2> 
         </div> 
         <div class="chart-container"> 
-          <div>Graphique des 30 derniers jours (à venir)</div> 
+         <canvas id="consumptionChart"></canvas>
+          
         </div> 
       </div> 
  
@@ -203,6 +205,7 @@
         </div> 
  
         <div class="chart-container"> 
+        <canvas id="historyChart"></canvas>
           <div><i class="fas fa-chart-line"></i> Graphique d'évolution de la consommation (à venir)</div> 
         </div> 
       </div> 
