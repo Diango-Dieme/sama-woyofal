@@ -1,0 +1,22 @@
+{
+  "name": "Sama-Woyofal",
+  "short_name": "Woyofal",
+  "description": "Votre assistant pour suivre la consommation Senelec.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f4f7fa",
+  "theme_color": "#007AFF",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}

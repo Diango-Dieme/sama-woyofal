@@ -11,7 +11,9 @@ let meterReadings = [];
 let recharges = [];
 let settings = {
   tariffType: "domestique-pp", // Valeur par défaut
-  tva: 18
+  tva: 18,
+  currentCredit: 0, // Ajout pour le suivi de crédit
+  theme: 'system' // Ajout pour le thème
 };
 
 // Chart instance
@@ -85,6 +87,38 @@ function showPage(pageId, event) {
   }
 }
 
+/**
+ * Applique le thème (clair/sombre/système) en changeant la classe sur la balise <html>
+ */
+function applyTheme(theme) {
+  const html = document.documentElement; // Cible la balise <html>
+  
+  // 1. Enlève d'abord les classes de forçage
+  html.classList.remove('theme-light', 'theme-dark');
+
+  // 2. Ajoute la classe de forçage si nécessaire
+  if (theme === 'light') {
+    html.classList.add('theme-light');
+  } else if (theme === 'dark') {
+    html.classList.add('theme-dark');
+  }
+  // Si theme === 'system', on ne fait rien, le CSS @media s'en occupe.
+  
+  // 3. Met à jour l'état "actif" des boutons
+  document.getElementById('theme-btn-light').classList.toggle('active', theme === 'light');
+  document.getElementById('theme-btn-dark').classList.toggle('active', theme === 'dark');
+  document.getElementById('theme-btn-system').classList.toggle('active', theme === 'system');
+}
+
+/**
+ * Fonction appelée par les boutons pour définir et sauvegarder le thème
+ */
+function setTheme(theme) {
+  settings.theme = theme;
+  saveToLocalStorage();
+  applyTheme(theme);
+}
+
 // --- Calcul de Coût (Modifié) ---
 function calculateCost(kwh) {
   // Récupérer les bons tarifs en fonction du type sélectionné
@@ -95,9 +129,8 @@ function calculateCost(kwh) {
 
   let cost = 0;
   
-  // Note: La tranche pro est souvent différente (ex: 0-250 kWh)
-  // Pour l'instant, on garde 150 kWh comme palier simple pour usage domestique
-  const palier = (settings.tariffType.startsWith("domestique")) ? 150 : 250; // Hypothèse d'un palier pro
+  // Hypothèse de palier : 150 kWh pour domestique, 250 kWh pour pro
+  const palier = (settings.tariffType.startsWith("domestique")) ? 150 : 250; 
 
   if (kwh <= palier) {
     cost = kwh * tariff1;
@@ -135,6 +168,15 @@ function addMeterReading() {
       return;
     }
     consumption = reading - lastReading.reading;
+
+    // --- AJOUT : Soustraire la consommation du crédit ---
+    if (consumption > 0) {
+      settings.currentCredit -= consumption;
+      if (settings.currentCredit < 0) {
+        settings.currentCredit = 0;
+      }
+    }
+    
   } else {
     // Premier relevé, pas de consommation à calculer
     consumption = 0;
@@ -157,9 +199,9 @@ function addMeterReading() {
   document.getElementById('meterDate').value = new Date().toISOString().split('T')[0];
 
   showMessage('inputMessage');
-  updateDashboard();
+  updateDashboard(); // Mettre à jour le crédit affiché
   updateHistoryTable();
-  saveToLocalStorage();
+  saveToLocalStorage(); // Sauvegarde le settings.currentCredit mis à jour
 }
 
 function addRecharge() {
@@ -171,6 +213,9 @@ function addRecharge() {
     showError('Veuillez remplir tous les champs avec des valeurs valides.');
     return;
   }
+
+  // --- AJOUT : Ajouter les unités au crédit ---
+  settings.currentCredit += units;
 
   recharges.push({
     date: date,
@@ -188,8 +233,9 @@ function addRecharge() {
   document.getElementById('rechargeDate').value = new Date().toISOString().split('T')[0];
 
   showMessage('inputMessage');
+  updateDashboard(); // Mettre à jour le crédit affiché
   updateRechargeHistoryTable(); // Ajout
-  saveToLocalStorage();
+  saveToLocalStorage(); // Sauvegarde le settings.currentCredit mis à jour
 }
 
 // --- Fonction saveTariffs (Modifiée) ---
@@ -197,12 +243,17 @@ function saveTariffs() {
   settings.tariffType = document.getElementById('tariffType').value;
   settings.tva = parseFloat(document.getElementById('tva').value);
 
+  // AJOUT : Sauvegarder le crédit actuel
+  const creditInput = parseFloat(document.getElementById('currentCredit').value);
+  if (!isNaN(creditInput) && creditInput >= 0) {
+    settings.currentCredit = creditInput;
+  }
+
   showMessage('settingsMessage');
   
-  // Recalculer les coûts existants avec les nouveaux tarifs
   recalculateAllCosts(); 
   
-  updateDashboard(); // Mettre à jour le dashboard (coût estimé)
+  updateDashboard(); // Mettre à jour le dashboard (coût et crédit)
   updateHistoryTable(); // Mettre à jour l'historique (coûts)
   saveToLocalStorage();
 }
@@ -251,9 +302,8 @@ function initializeConsumptionChart() {
   const ctx = document.getElementById('consumptionChart').getContext('2d');
   
   const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-  gradient.addColorStop(0, 'rgba(66, 133, 244, 0.4)');
-  gradient.addColorStop(0.5, 'rgba(66, 133, 244, 0.2)');
-  gradient.addColorStop(1, 'rgba(66, 133, 244, 0.05)');
+  gradient.addColorStop(0, 'rgba(0, 122, 255, 0.4)');
+  gradient.addColorStop(1, 'rgba(0, 122, 255, 0)');
 
   consumptionChartInstance = new Chart(ctx, {
     type: 'line',
@@ -263,12 +313,12 @@ function initializeConsumptionChart() {
         label: 'Consommation (kWh)',
         data: [],
         backgroundColor: gradient,
-        borderColor: 'rgba(66, 133, 244, 1)',
+        borderColor: 'rgba(0, 122, 255, 1)',
         borderWidth: 3,
         tension: 0.4,
         fill: true,
         pointBackgroundColor: '#ffffff',
-        pointBorderColor: 'rgba(66, 133, 244, 1)',
+        pointBorderColor: 'rgba(0, 122, 255, 1)',
         pointBorderWidth: 2,
         pointRadius: 4,
       }]
@@ -302,8 +352,8 @@ function initializeHistoryChart() {
       datasets: [{
         label: 'Consommation (kWh)',
         data: [],
-        backgroundColor: 'rgba(118, 75, 162, 0.6)', // Couleur violette
-        borderColor: 'rgba(118, 75, 162, 1)',
+        backgroundColor: 'rgba(122, 92, 255, 0.6)', // Couleur secondaire
+        borderColor: 'rgba(122, 92, 255, 1)',
         borderWidth: 1
       }]
     },
@@ -368,13 +418,42 @@ function updateDashboard() {
   const totalConsumption = validReadings.reduce((sum, reading) => sum + reading.consumption, 0);
   const totalCost = validReadings.reduce((sum, reading) => sum + reading.cost, 0);
   const daysCount = validReadings.length;
-  const dailyAverage = daysCount > 0 ? (totalConsumption / daysCount).toFixed(2) : 0;
+  const dailyAverage = daysCount > 0 ? (totalConsumption / daysCount) : 0;
 
   // Update dashboard stats
   document.getElementById('monthConsumption').textContent = totalConsumption.toFixed(2);
   document.getElementById('monthCost').textContent = Math.round(totalCost);
-  document.getElementById('dailyAverage').textContent = dailyAverage;
+  document.getElementById('dailyAverage').textContent = dailyAverage.toFixed(2);
   document.getElementById('daysInMonth').textContent = daysCount;
+
+  // --- AJOUT : Mise à jour du crédit et des jours restants ---
+  const creditDisplay = document.getElementById('currentCreditDisplay');
+  const daysDisplay = document.getElementById('daysRemainingDisplay');
+  const daysCard = daysDisplay.closest('.stat-card'); // Pour le style
+
+  creditDisplay.textContent = settings.currentCredit.toFixed(1);
+
+  if (dailyAverage > 0 && settings.currentCredit > 0) {
+    const daysRemaining = settings.currentCredit / dailyAverage;
+    daysDisplay.textContent = Math.floor(daysRemaining); // Arrondir aux jours pleins
+
+    // Changer la couleur de la carte des jours restants
+    if (daysRemaining <= 3) {
+      daysCard.style.background = "linear-gradient(135deg, #FF3B30, #E02B20)"; // Rouge
+    } else if (daysRemaining <= 7) {
+      daysCard.style.background = "linear-gradient(135deg, #FF9500, #D98000)"; // Orange
+    } else {
+      daysCard.style.background = "linear-gradient(135deg, #667eea, #764ba2)"; // Bleu (défaut)
+    }
+
+  } else if (settings.currentCredit <= 0) {
+    daysDisplay.textContent = "0";
+    daysCard.style.background = "linear-gradient(135deg, #FF3B30, #E02B20)"; // Rouge
+  } else {
+    daysDisplay.textContent = "-"; // Si on n'a pas de moyenne
+    daysCard.style.background = "linear-gradient(135deg, #667eea, #764ba2)"; // Bleu
+  }
+  // --- FIN DE L'AJOUT ---
 
   // Mettre à jour le graphique
   updateConsumptionChart();
@@ -390,8 +469,9 @@ function updateHistoryTable() {
   if (validReadings.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="4" style="text-align: center; padding: 40px; color: #666;">
-          <i class="fas fa-database"></i> Aucune donnée de consommation
+        <td colspan="4" style="text-align: center; padding: 40px; color: var(--text-secondary);">
+          <i class="fas fa-database" style="font-size: 1.5em; margin-bottom: 10px; display: block;"></i>
+          Aucune donnée de consommation
         </td>
       </tr>
     `;
@@ -409,7 +489,7 @@ function updateHistoryTable() {
       <td data-label="Consommation">${reading.consumption.toFixed(2)} kWh</td>
       <td data-label="Coût estimé">${Math.round(reading.cost)} FCFA</td>
       <td data-label="Actions">
-        <button class="btn btn-danger" onclick="deleteReading(${originalIndex})" style="padding: 5px 10px; font-size: 14px;">
+        <button class="btn btn-danger" onclick="deleteReading(${originalIndex})">
           <i class="fas fa-trash-alt"></i>
         </button>
       </td>
@@ -426,8 +506,9 @@ function updateRechargeHistoryTable() {
   if (recharges.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="5" style="text-align: center; padding: 40px; color: #666;">
-          <i class="fas fa-database"></i> Aucune recharge enregistrée
+        <td colspan="5" style="text-align: center; padding: 40px; color: var(--text-secondary);">
+          <i class="fas fa-database" style="font-size: 1.5em; margin-bottom: 10px; display: block;"></i>
+          Aucune recharge enregistrée
         </td>
       </tr>
     `;
@@ -444,7 +525,7 @@ function updateRechargeHistoryTable() {
       <td data-label="Unités">${recharge.units.toFixed(2)} kWh</td>
       <td data-label="Coût">${recharge.rate.toFixed(2)} FCFA/kWh</td>
       <td data-label="Actions">
-        <button class="btn btn-danger" onclick="deleteRecharge(${originalIndex})" style="padding: 5px 10px; font-size: 14px;">
+        <button class="btn btn-danger" onclick="deleteRecharge(${originalIndex})">
           <i class="fas fa-trash-alt"></i>
         </button>
       </td>
@@ -471,6 +552,14 @@ function formatDate(dateString) {
 
 function deleteReading(index) {
   if (confirm('Êtes-vous sûr de vouloir supprimer ce relevé ?')) {
+    
+    // --- AJOUT : Recréditer le crédit avant de supprimer ---
+    const readingToCancel = meterReadings[index];
+    if (readingToCancel && readingToCancel.consumption > 0) {
+      settings.currentCredit += readingToCancel.consumption;
+    }
+    // --- Fin Ajout ---
+
     meterReadings.splice(index, 1);
     
     // Recalculer la consommation après suppression
@@ -491,6 +580,8 @@ function recalculateConsumption() {
       meterReadings[i].consumption = 0; // Le premier relevé n'a pas de conso
     } else {
       meterReadings[i].consumption = meterReadings[i].reading - meterReadings[i - 1].reading;
+      // S'assurer qu'une consommation n'est pas négative (si données incohérentes)
+      if (meterReadings[i].consumption < 0) meterReadings[i].consumption = 0;
     }
     // Recalculer le coût aussi
     meterReadings[i].cost = calculateCost(meterReadings[i].consumption);
@@ -501,8 +592,19 @@ function recalculateConsumption() {
 // --- Nouvelle Fonction ---
 function deleteRecharge(index) {
   if (confirm('Êtes-vous sûr de vouloir supprimer cette recharge ?')) {
+    
+    // --- AJOUT : Décréditer le crédit avant de supprimer ---
+    const rechargeToCancel = recharges[index];
+    if (rechargeToCancel && rechargeToCancel.units > 0) {
+      settings.currentCredit -= rechargeToCancel.units;
+      if (settings.currentCredit < 0) settings.currentCredit = 0;
+    }
+    // --- Fin Ajout ---
+    
     recharges.splice(index, 1);
+    
     updateRechargeHistoryTable();
+    updateDashboard(); // Mettre à jour le crédit
     saveToLocalStorage();
   }
 }
@@ -561,20 +663,21 @@ function updateAnalysis() {
   const averageDaily = filteredReadings.length > 0 ? (totalConsumption / filteredReadings.length) : 0;
   const maxConsumption = filteredReadings.length > 0 ? Math.max(...filteredReadings.map(r => r.consumption)) : 0;
 
+  // Utilise les styles des stat-card normales, mais sans couleur de fond
   analysisResult.innerHTML = `
-    <div class="stat-card" style="background: #f8f9fa; color: #333; box-shadow: none; border: 1px solid #eee;">
+    <div class="stat-card"> 
       <div class="stat-number">${totalConsumption.toFixed(2)}</div>
       <div class="stat-label">kWh Total</div>
     </div>
-    <div class="stat-card" style="background: #f8f9fa; color: #333; box-shadow: none; border: 1px solid #eee;">
+    <div class="stat-card">
       <div class="stat-number">${Math.round(totalCost)}</div>
       <div class="stat-label">FCFA Total</div>
     </div>
-    <div class="stat-card" style="background: #f8f9fa; color: #333; box-shadow: none; border: 1px solid #eee;">
+    <div class="stat-card">
       <div class="stat-number">${averageDaily.toFixed(2)}</div>
       <div class="stat-label">kWh/jour (Moy)</div>
     </div>
-    <div class="stat-card" style="background: #f8f9fa; color: #333; box-shadow: none; border: 1px solid #eee;">
+    <div class="stat-card">
       <div class="stat-number">${maxConsumption.toFixed(2)}</div>
       <div class="stat-label">Pic (kWh)</div>
     </div>
@@ -609,17 +712,25 @@ function loadFromLocalStorage() {
   if (savedRecharges) recharges = JSON.parse(savedRecharges);
   
   if (savedSettings) {
-    settings = JSON.parse(savedSettings);
+    // Fusionner les paramètres sauvegardés avec les défauts
+    const loadedSettings = JSON.parse(savedSettings);
+    settings = { ...settings, ...loadedSettings };
+    
     // Ajout d'une vérification pour les anciens utilisateurs qui avaient tariff1/tariff2
-    if (!settings.tariffType) {
+    if (loadedSettings.tariff1 && !loadedSettings.tariffType) {
       settings.tariffType = "domestique-pp";
-      settings.tva = settings.tva || 18; // Garde l'ancienne TVA si elle existe
     }
   }
+
+  // --- AJOUT : Appliquer le thème sauvegardé ---
+  applyTheme(settings.theme); 
+  // --- FIN DE L'AJOUT ---
 
   // Mettre à jour les champs de paramètres
   document.getElementById('tariffType').value = settings.tariffType;
   document.getElementById('tva').value = settings.tva;
+  
+  document.getElementById('currentCredit').value = settings.currentCredit.toFixed(1);
 
   recalculateAllCosts(); // S'assurer que les coûts sont à jour avec les tarifs chargés
   updateDashboard();
@@ -627,7 +738,7 @@ function loadFromLocalStorage() {
   updateRechargeHistoryTable(); // Ajout
 }
 
-// --- Fonction exportData (Modifiée) ---
+// --- Fonction exportData (pour la sauvegarde) ---
 function exportData(event) {
   event.preventDefault(); // Empêche le lien de sauter
   const data = {
@@ -641,12 +752,86 @@ function exportData(event) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `sama-woyofal-backup-${new Date().toISOString().split('T')[0]}.json`;
+  a.download = `sama-woyofal-sauvegarde-${new Date().toISOString().split('T')[0]}.json`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+
+// --- NOUVELLE FONCTION : Exporter les données en Fichier Texte (.txt) ---
+function exportAsTXT(event) {
+  event.preventDefault();
+
+  let txtRows = [];
+  const nl = "\r\n"; // Nouvelle Ligne
+
+  txtRows.push("===== RAPPORT SAMA-WOYOFAL =====");
+  txtRows.push(`Date du rapport: ${formatDate(new Date().toISOString())}`);
+  txtRows.push(nl);
+
+  // --- Section 1: État Actuel ---
+  txtRows.push("--- État Actuel ---");
+  txtRows.push(`Crédit restant estime: ${settings.currentCredit.toFixed(1)} kWh`);
+  const dailyAvg = parseFloat(document.getElementById('dailyAverage').textContent) || 0;
+  if (dailyAvg > 0) {
+    const daysLeft = Math.floor(settings.currentCredit / dailyAvg);
+    txtRows.push(`Jours restants estimes: ${daysLeft} jours`);
+  } else {
+    txtRows.push("Jours restants estimes: (pas assez de données)");
+  }
+  txtRows.push(nl);
+
+  // --- Section 2: Relevés de consommation ---
+  txtRows.push("--- Historique des Consommations ---");
+  txtRows.push("Date       | Consommé (kWh) | Coût (FCFA)");
+  txtRows.push("-------------------------------------------");
+  
+  const validReadings = meterReadings.filter(r => r.consumption > 0);
+  if (validReadings.length > 0) {
+    [...validReadings].reverse().forEach(reading => { // Du plus récent au plus ancien
+      const date = formatDate(reading.date).padEnd(10);
+      const conso = reading.consumption.toFixed(2).padEnd(14);
+      const cout = Math.round(reading.cost);
+      txtRows.push(`${date} | ${conso} | ${cout}`);
+    });
+  } else {
+    txtRows.push("Aucune donnée de consommation.");
+  }
+  txtRows.push(nl);
+
+  // --- Section 3: Historique des Recharges ---
+  txtRows.push("--- Historique des Recharges ---");
+  txtRows.push("Date       | Montant (FCFA) | Unités (kWh)");
+  txtRows.push("-------------------------------------------");
+
+  if (recharges.length > 0) {
+    [...recharges].reverse().forEach(recharge => { // Du plus récent au plus ancien
+      const date = formatDate(recharge.date).padEnd(10);
+      const montant = recharge.amount.toString().padEnd(14);
+      const unites = recharge.units.toFixed(2);
+      txtRows.push(`${date} | ${montant} | ${unites}`);
+    });
+  } else {
+    txtRows.push("Aucune recharge enregistrée.");
+  }
+  
+  // Joindre toutes les lignes
+  const txtContent = txtRows.join(nl);
+
+  // Créer le Blob
+  const blob = new Blob([txtContent], { type: 'text/plain;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Rapport-Sama-Woyofal-${new Date().toISOString().split('T')[0]}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 
 function importData(event) {
   const file = event.target.files[0];
@@ -659,7 +844,7 @@ function importData(event) {
     
     // Valider un peu les données
     if (data.meterReadings && data.recharges && data.settings) {
-      if (confirm("Importer ce fichier écrasera vos données actuelles. Continuer ?")) {
+      if (confirm("Charger ce fichier écrasera vos données actuelles. Continuer ?")) {
         meterReadings = data.meterReadings;
         recharges = data.recharges;
         settings = data.settings;
@@ -685,12 +870,18 @@ function importData(event) {
 // --- Fonction resetData (Modifiée) ---
 function resetData(event) {
   event.preventDefault(); // Empêche le lien de sauter
-  if (confirm('Êtes-vous sûr de vouloir réinitialiser TOUTES les données ? Cette action est irréversible.')) {
+  if (confirm('Êtes-vous sûr de vouloir réinitialiser TOUTES les données (relevés et recharges) ? Cette action est irréversible.')) {
     meterReadings = [];
     recharges = [];
-    // Ne pas réinitialiser les settings, seulement les données
+    
+    // AJOUT : Réinitialiser aussi le crédit
+    settings.currentCredit = 0; 
+    document.getElementById('currentCredit').value = ""; // Vider le champ
+    
     localStorage.removeItem('meterReadings');
     localStorage.removeItem('recharges');
+    // On sauvegarde les settings (pour garder le crédit à 0)
+    saveToLocalStorage(); 
     
     // Mettre à jour tous les affichages
     updateDashboard();
