@@ -1,14 +1,22 @@
+// Grille tarifaire
+const TARIFF_GRID = {
+  "domestique-pp": { t1: 91.17, t2: 136.49 },
+  "domestique-mp": { t1: 111.23, t2: 143.54 },
+  "pro-pp": { t1: 163.81, t2: 189.84 },
+  "pro-mp": { t1: 165.01, t2: 191.01 }
+};
+
 // Data storage
 let meterReadings = [];
 let recharges = [];
 let settings = {
-  tariff1: 91.17,
-  tariff2: 136.49,
+  tariffType: "domestique-pp", // Valeur par défaut
   tva: 18
 };
 
 // Chart instance
 let consumptionChartInstance = null;
+let historyChartInstance = null; // Ajout pour le 2e graphique
 
 // Daily tips
 const tips = [
@@ -24,6 +32,7 @@ const tips = [
 document.addEventListener('DOMContentLoaded', function() {
   initializeDates();
   initializeConsumptionChart();
+  initializeHistoryChart(); // Ajout
   updateDashboard();
   showRandomTip();
   loadFromLocalStorage();
@@ -43,6 +52,7 @@ function initializeDates() {
 }
 
 function showPage(pageId, event) {
+  event.preventDefault(); // Empêche le lien de sauter en haut de page
   // Hide all pages
   document.querySelectorAll('.page').forEach(page => {
     page.classList.remove('active');
@@ -58,7 +68,11 @@ function showPage(pageId, event) {
 
   // Add active class to selected nav link if event exists
   if (event) {
-    event.target.classList.add('active');
+    // Gère le clic sur l'icône ou le texte
+    const targetLink = event.target.closest('.nav-link');
+    if (targetLink) {
+      targetLink.classList.add('active');
+    }
   }
 
   // Update page-specific content
@@ -66,25 +80,39 @@ function showPage(pageId, event) {
     updateDashboard();
   } else if (pageId === 'history') {
     updateHistoryTable();
-  } else if (pageId === 'analysis') {
-    updateAnalysis();
+    updateRechargeHistoryTable();
+    updateAnalysis(); // Mettre à jour l'analyse en affichant la page
   }
 }
 
+// --- Calcul de Coût (Modifié) ---
 function calculateCost(kwh) {
-  const tariff1 = settings.tariff1;
-  const tariff2 = settings.tariff2;
+  // Récupérer les bons tarifs en fonction du type sélectionné
+  const tariffs = TARIFF_GRID[settings.tariffType] || TARIFF_GRID["domestique-pp"];
+  const tariff1 = tariffs.t1;
+  const tariff2 = tariffs.t2;
   const tva = settings.tva / 100;
 
   let cost = 0;
+  
+  // Note: La tranche pro est souvent différente (ex: 0-250 kWh)
+  // Pour l'instant, on garde 150 kWh comme palier simple pour usage domestique
+  const palier = (settings.tariffType.startsWith("domestique")) ? 150 : 250; // Hypothèse d'un palier pro
 
-  if (kwh <= 150) {
+  if (kwh <= palier) {
     cost = kwh * tariff1;
   } else {
-    cost = (150 * tariff1) + ((kwh - 150) * tariff2);
+    cost = (palier * tariff1) + ((kwh - palier) * tariff2);
   }
 
   return cost * (1 + tva);
+}
+
+// --- Nouvelle Fonction ---
+function recalculateAllCosts() {
+  meterReadings.forEach(reading => {
+    reading.cost = calculateCost(reading.consumption);
+  });
 }
 
 function addMeterReading() {
@@ -99,21 +127,27 @@ function addMeterReading() {
   // Calculate consumption if we have a previous reading
   let consumption = 0;
   if (meterReadings.length > 0) {
-    const lastReading = meterReadings[meterReadings.length - 1];
-    consumption = reading - lastReading.reading;
-
-    if (consumption < 0) {
-      showError('La nouvelle valeur doit être supérieure à la précédente.');
+    // Trouver le dernier relevé par date
+    const lastReading = [...meterReadings].sort((a, b) => new Date(a.date) - new Date(b.date)).pop();
+    
+    if (reading < lastReading.reading) {
+      showError('La nouvelle valeur doit être supérieure à la dernière enregistrée.');
       return;
     }
+    consumption = reading - lastReading.reading;
+  } else {
+    // Premier relevé, pas de consommation à calculer
+    consumption = 0;
   }
 
-  meterReadings.push({
+  const newReading = {
     date: date,
     reading: reading,
     consumption: consumption,
-    cost: calculateCost(consumption)
-  });
+    cost: calculateCost(consumption) // Calculer le coût
+  };
+
+  meterReadings.push(newReading);
 
   // Sort by date
   meterReadings.sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -154,16 +188,22 @@ function addRecharge() {
   document.getElementById('rechargeDate').value = new Date().toISOString().split('T')[0];
 
   showMessage('inputMessage');
+  updateRechargeHistoryTable(); // Ajout
   saveToLocalStorage();
 }
 
+// --- Fonction saveTariffs (Modifiée) ---
 function saveTariffs() {
-  settings.tariff1 = parseFloat(document.getElementById('tariff1').value);
-  settings.tariff2 = parseFloat(document.getElementById('tariff2').value);
+  settings.tariffType = document.getElementById('tariffType').value;
   settings.tva = parseFloat(document.getElementById('tva').value);
 
   showMessage('settingsMessage');
-  updateDashboard();
+  
+  // Recalculer les coûts existants avec les nouveaux tarifs
+  recalculateAllCosts(); 
+  
+  updateDashboard(); // Mettre à jour le dashboard (coût estimé)
+  updateHistoryTable(); // Mettre à jour l'historique (coûts)
   saveToLocalStorage();
 }
 
@@ -176,12 +216,31 @@ function showMessage(messageId) {
 }
 
 function showError(message) {
-  const errorDiv = document.createElement('div');
-  errorDiv.className = 'alert alert-error';
+  // Tente de trouver un conteneur de message d'erreur existant
+  let errorDiv = document.getElementById('alert-error-popup');
+  if (!errorDiv) {
+    errorDiv = document.createElement('div');
+    errorDiv.id = 'alert-error-popup';
+    errorDiv.className = 'alert alert-error';
+    // Style pour le mettre au-dessus de tout
+    errorDiv.style.position = 'fixed';
+    errorDiv.style.top = '20px';
+    errorDiv.style.left = '50%';
+    errorDiv.style.transform = 'translateX(-50%)';
+    errorDiv.style.zIndex = '1000';
+    errorDiv.style.boxShadow = '0 5px 15px rgba(0,0,0,0.2)';
+    document.body.appendChild(errorDiv);
+  }
+  
   errorDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
-  document.body.appendChild(errorDiv);
-  setTimeout(() => errorDiv.remove(), 3000);
+  errorDiv.style.display = 'block';
+  
+  // Cache le message après 3 secondes
+  setTimeout(() => {
+    if (errorDiv) errorDiv.style.display = 'none';
+  }, 3000);
 }
+
 
 function showRandomTip() {
   const randomIndex = Math.floor(Math.random() * tips.length);
@@ -191,205 +250,105 @@ function showRandomTip() {
 function initializeConsumptionChart() {
   const ctx = document.getElementById('consumptionChart').getContext('2d');
   
-  const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+  const gradient = ctx.createLinearGradient(0, 0, 0, 300);
   gradient.addColorStop(0, 'rgba(66, 133, 244, 0.4)');
   gradient.addColorStop(0.5, 'rgba(66, 133, 244, 0.2)');
   gradient.addColorStop(1, 'rgba(66, 133, 244, 0.05)');
 
-  const data = {
-    labels: [],
-    datasets: [{
-      label: 'Consommation (kWh)',
-      data: [],
-      backgroundColor: gradient,
-      borderColor: 'rgba(66, 133, 244, 1)',
-      borderWidth: 3,
-      tension: 0.4,
-      fill: true,
-      pointBackgroundColor: '#ffffff',
-      pointBorderColor: 'rgba(66, 133, 244, 1)',
-      pointBorderWidth: 3,
-      pointRadius: 5,
-      pointHoverRadius: 8,
-      pointHoverBackgroundColor: '#ffffff',
-      pointHoverBorderColor: 'rgba(66, 133, 244, 1)',
-      pointHoverBorderWidth: 4
-    }]
-  };
-
-  const config = {
+  consumptionChartInstance = new Chart(ctx, {
     type: 'line',
-    data: data,
+    data: {
+      labels: [],
+      datasets: [{
+        label: 'Consommation (kWh)',
+        data: [],
+        backgroundColor: gradient,
+        borderColor: 'rgba(66, 133, 244, 1)',
+        borderWidth: 3,
+        tension: 0.4,
+        fill: true,
+        pointBackgroundColor: '#ffffff',
+        pointBorderColor: 'rgba(66, 133, 244, 1)',
+        pointBorderWidth: 2,
+        pointRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: { beginAtZero: true },
+        x: {}
+      },
+      plugins: {
+        legend: { display: false },
+        title: {
+          display: true,
+          text: 'Consommation des 30 derniers relevés',
+          font: { size: 16 }
+        }
+      }
+    }
+  });
+}
+
+// --- Nouvelle Fonction ---
+function initializeHistoryChart() {
+  const ctx = document.getElementById('historyChart').getContext('2d');
+  historyChartInstance = new Chart(ctx, {
+    type: 'bar', // Un graphique en barres est bien pour l'analyse
+    data: {
+      labels: [],
+      datasets: [{
+        label: 'Consommation (kWh)',
+        data: [],
+        backgroundColor: 'rgba(118, 75, 162, 0.6)', // Couleur violette
+        borderColor: 'rgba(118, 75, 162, 1)',
+        borderWidth: 1
+      }]
+    },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: {
-          display: true,
-          position: 'top',
-          labels: {
-            color: '#2c3e50',
-            font: {
-              size: 13,
-              weight: '600',
-              family: "'Segoe UI', 'Roboto', sans-serif"
-            },
-            padding: 20,
-            usePointStyle: true,
-            pointStyle: 'circle'
-          }
-        },
+        legend: { display: false },
         title: {
           display: true,
-          text: ' ÉVOLUTION DE VOTRE CONSOMMATION',
-          color: '#2c3e50',
-          font: {
-            size: 16,
-            weight: 'bold',
-            family: "'Segoe UI', 'Roboto', sans-serif"
-          },
-          padding: {
-            top: 10,
-            bottom: 25
-          }
-        },
-        tooltip: {
-          backgroundColor: 'rgba(44, 62, 80, 0.95)',
-          titleColor: '#ecf0f1',
-          bodyColor: '#ecf0f1',
-          borderColor: 'rgba(66, 133, 244, 0.8)',
-          borderWidth: 2,
-          padding: 15,
-          cornerRadius: 10,
-          boxPadding: 6,
-          usePointStyle: true,
-          callbacks: {
-            title: function(tooltipItems) {
-              return tooltipItems[0].label;
-            },
-            label: function(context) {
-              return `Consommation: ${context.parsed.y} kWh`;
-            }
-          }
+          text: 'Consommation par jour',
+          font: { size: 16 }
         }
       },
       scales: {
         y: {
           beginAtZero: true,
-          grid: {
-            color: 'rgba(0, 0, 0, 0.08)',
-            drawBorder: false
-          },
-          ticks: {
-            color: '#7f8c8d',
-            font: {
-              size: 12,
-              family: "'Segoe UI', 'Roboto', sans-serif"
-            },
-            padding: 10
-          },
-          title: {
-            display: true,
-            text: 'KILOWATT-HEURE (KWH)',
-            color: '#7f8c8d',
-            font: {
-              size: 12,
-              weight: '600',
-              family: "'Segoe UI', 'Roboto', sans-serif"
-            },
-            padding: {
-              top: 10,
-              bottom: 10
-            }
-          }
+          title: { display: true, text: 'kWh' }
         },
         x: {
-          grid: {
-            color: 'rgba(0, 0, 0, 0.05)',
-            drawBorder: false
-          },
-          ticks: {
-            color: '#7f8c8d',
-            font: {
-              size: 11,
-              family: "'Segoe UI', 'Roboto', sans-serif"
-            },
-            maxRotation: 45,
-            minRotation: 45
-          },
-          title: {
-            display: true,
-            text: 'DATE',
-            color: '#7f8c8d',
-            font: {
-              size: 12,
-              weight: '600',
-              family: "'Segoe UI', 'Roboto', sans-serif"
-            },
-            padding: {
-              top: 15,
-              bottom: 5
-            }
-          }
-        }
-      },
-      interaction: {
-        mode: 'index',
-        intersect: false
-      },
-      animations: {
-        tension: {
-          duration: 1000,
-          easing: 'easeOutQuart'
-        }
-      },
-      elements: {
-        line: {
-          tension: 0.4
+          title: { display: true, text: 'Date' }
         }
       }
     }
-  };
-
-  consumptionChartInstance = new Chart(ctx, config);
-  updateConsumptionChart();
+  });
 }
 
-function updateConsumptionChart() {
-  if (meterReadings.length === 0) {
-    // Afficher le message "à venir" si pas de données
-    document.querySelector('.chart-container div').style.display = 'block';
-    return;
-  }
-  
-  // Cacher le message "à venir"
-  document.querySelector('.chart-container div').style.display = 'none';
-  
-  // Prendre les 30 derniers jours ou moins si pas assez de données
-  const displayData = meterReadings.slice(-30);
-  
-  const labels = displayData.map(reading => {
-    const date = new Date(reading.date);
-    return date.toLocaleDateString('fr-FR', { 
-      day: 'numeric', 
-      month: 'short',
-      year: meterReadings.length > 365 ? '2-digit' : undefined
-    });
-  });
-  
-  const data = displayData.map(reading => reading.consumption);
 
-  if (consumptionChartInstance) {
-    consumptionChartInstance.data.labels = labels;
-    consumptionChartInstance.data.datasets[0].data = data;
-    
-    // Mettre à jour le titre avec le nombre de jours affichés
-    const dayCount = displayData.length;
-    consumptionChartInstance.options.plugins.title.text = 
-      `📊 CONSOMMATION DES ${dayCount} DERNIERS JOURS`;
-    
-    consumptionChartInstance.update('active');
-  }
+function updateConsumptionChart() {
+  if (!consumptionChartInstance) return;
+
+  // On ne prend que les relevés qui ont une consommation (donc > 1er relevé)
+  const consumptionData = meterReadings.filter(r => r.consumption > 0).slice(-30);
+  
+  const labels = consumptionData.map(reading => formatDate(reading.date));
+  const data = consumptionData.map(reading => reading.consumption);
+
+  consumptionChartInstance.data.labels = labels;
+  consumptionChartInstance.data.datasets[0].data = data;
+  
+  const dayCount = consumptionData.length;
+  consumptionChartInstance.options.plugins.title.text = 
+    `Consommation des ${dayCount} derniers relevés`;
+  
+  consumptionChartInstance.update();
 }
 
 function updateDashboard() {
@@ -403,9 +362,12 @@ function updateDashboard() {
            readingDate.getFullYear() === currentYear;
   });
 
-  const totalConsumption = monthReadings.reduce((sum, reading) => sum + reading.consumption, 0);
-  const totalCost = monthReadings.reduce((sum, reading) => sum + reading.cost, 0);
-  const daysCount = monthReadings.length;
+  // On ne compte que les relevés qui ont une consommation
+  const validReadings = monthReadings.filter(r => r.consumption > 0);
+
+  const totalConsumption = validReadings.reduce((sum, reading) => sum + reading.consumption, 0);
+  const totalCost = validReadings.reduce((sum, reading) => sum + reading.cost, 0);
+  const daysCount = validReadings.length;
   const dailyAverage = daysCount > 0 ? (totalConsumption / daysCount).toFixed(2) : 0;
 
   // Update dashboard stats
@@ -422,26 +384,32 @@ function updateHistoryTable() {
   const tbody = document.getElementById('historyTableBody');
   tbody.innerHTML = '';
 
-  if (meterReadings.length === 0) {
+  // On n'affiche que les relevés avec une consommation
+  const validReadings = meterReadings.filter(r => r.consumption > 0);
+
+  if (validReadings.length === 0) {
     tbody.innerHTML = `
       <tr>
         <td colspan="4" style="text-align: center; padding: 40px; color: #666;">
-          <i class="fas fa-database"></i> Aucune donnée enregistrée
+          <i class="fas fa-database"></i> Aucune donnée de consommation
         </td>
       </tr>
     `;
     return;
   }
 
-  meterReadings.forEach((reading, index) => {
+  // Afficher du plus récent au plus ancien
+  [...validReadings].reverse().forEach((reading) => {
+    // Trouver l'index original pour la suppression
+    const originalIndex = meterReadings.findIndex(r => r.date === reading.date && r.reading === reading.reading);
+    
     const row = document.createElement('tr');
     row.innerHTML = `
-      <td>${formatDate(reading.date)}</td>
-      <td>${reading.reading.toFixed(2)}</td>
-      <td>${reading.consumption.toFixed(2)}</td>
-      <td>${Math.round(reading.cost)} FCFA</td>
-      <td>
-        <button class="btn btn-danger" onclick="deleteReading(${index})" style="padding: 5px 10px; font-size: 14px;">
+      <td data-label="Date">${formatDate(reading.date)}</td>
+      <td data-label="Consommation">${reading.consumption.toFixed(2)} kWh</td>
+      <td data-label="Coût estimé">${Math.round(reading.cost)} FCFA</td>
+      <td data-label="Actions">
+        <button class="btn btn-danger" onclick="deleteReading(${originalIndex})" style="padding: 5px 10px; font-size: 14px;">
           <i class="fas fa-trash-alt"></i>
         </button>
       </td>
@@ -450,86 +418,180 @@ function updateHistoryTable() {
   });
 }
 
-function formatDate(dateString) {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('fr-FR');
+// --- Nouvelle Fonction ---
+function updateRechargeHistoryTable() {
+  const tbody = document.getElementById('rechargeHistoryTableBody');
+  tbody.innerHTML = '';
+
+  if (recharges.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="5" style="text-align: center; padding: 40px; color: #666;">
+          <i class="fas fa-database"></i> Aucune recharge enregistrée
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  // Afficher du plus récent au plus ancien
+  [...recharges].reverse().forEach((recharge, index) => {
+    const originalIndex = recharges.length - 1 - index; // Index pour la suppression
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td data-label="Date">${formatDate(recharge.date)}</td>
+      <td data-label="Montant">${recharge.amount.toLocaleString('fr-FR')} FCFA</td>
+      <td data-label="Unités">${recharge.units.toFixed(2)} kWh</td>
+      <td data-label="Coût">${recharge.rate.toFixed(2)} FCFA/kWh</td>
+      <td data-label="Actions">
+        <button class="btn btn-danger" onclick="deleteRecharge(${originalIndex})" style="padding: 5px 10px; font-size: 14px;">
+          <i class="fas fa-trash-alt"></i>
+        </button>
+      </td>
+    `;
+    tbody.appendChild(row);
+  });
 }
 
+
+function formatDate(dateString) {
+  // Gérer le cas où dateString est invalide ou null
+  if (!dateString) return "Date inconnue";
+  const date = new Date(dateString);
+  // Vérifier si la date est valide
+  if (isNaN(date.getTime())) return "Date invalide";
+  // Utiliser 'fr-FR' pour un format JJ/MM/AAAA
+  return date.toLocaleDateString('fr-FR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+}
+
+
 function deleteReading(index) {
-  if (confirm('Êtes-vous sûr de vouloir supprimer cette lecture ?')) {
+  if (confirm('Êtes-vous sûr de vouloir supprimer ce relevé ?')) {
     meterReadings.splice(index, 1);
+    
+    // Recalculer la consommation après suppression
+    recalculateConsumption();
+
     updateHistoryTable();
     updateDashboard();
     saveToLocalStorage();
   }
 }
 
+// --- Nouvelle fonction pour recalculer la consommation ---
+function recalculateConsumption() {
+  // S'assurer que c'est trié par date
+  meterReadings.sort((a, b) => new Date(a.date) - new Date(b.date));
+  for (let i = 0; i < meterReadings.length; i++) {
+    if (i === 0) {
+      meterReadings[i].consumption = 0; // Le premier relevé n'a pas de conso
+    } else {
+      meterReadings[i].consumption = meterReadings[i].reading - meterReadings[i - 1].reading;
+    }
+    // Recalculer le coût aussi
+    meterReadings[i].cost = calculateCost(meterReadings[i].consumption);
+  }
+}
+
+
+// --- Nouvelle Fonction ---
+function deleteRecharge(index) {
+  if (confirm('Êtes-vous sûr de vouloir supprimer cette recharge ?')) {
+    recharges.splice(index, 1);
+    updateRechargeHistoryTable();
+    saveToLocalStorage();
+  }
+}
+
+// --- Fonction updateAnalysis (Modifiée) ---
 function updateAnalysis() {
   const period = document.getElementById('analysisPeriod').value;
   const analysisResult = document.getElementById('analysisResult');
   
-  if (meterReadings.length < 2) {
+  const readingsWithConsumption = meterReadings.filter(r => r.consumption > 0);
+
+  if (readingsWithConsumption.length < 1) {
     analysisResult.innerHTML = `
-      <div class="alert alert-info">
+      <div class="alert alert-info" style="grid-column: 1 / -1;">
         <i class="fas fa-info-circle"></i> Pas assez de données pour l'analyse
       </div>
     `;
+    // Vider le graphique
+    if (historyChartInstance) {
+      historyChartInstance.data.labels = [];
+      historyChartInstance.data.datasets[0].data = [];
+      historyChartInstance.update();
+    }
     return;
   }
 
   let filteredReadings = [];
   const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
   switch (period) {
     case '7days':
-      const weekAgo = new Date(now.setDate(now.getDate() - 7));
-      filteredReadings = meterReadings.filter(r => new Date(r.date) >= weekAgo);
+      const weekAgo = new Date(new Date(today).setDate(today.getDate() - 7));
+      filteredReadings = readingsWithConsumption.filter(r => new Date(r.date) >= weekAgo);
       break;
     case '30days':
-      const monthAgo = new Date(now.setDate(now.getDate() - 30));
-      filteredReadings = meterReadings.filter(r => new Date(r.date) >= monthAgo);
+      const monthAgo = new Date(new Date(today).setDate(today.getDate() - 30));
+      filteredReadings = readingsWithConsumption.filter(r => new Date(r.date) >= monthAgo);
       break;
     case 'all':
-      filteredReadings = [...meterReadings];
+      filteredReadings = [...readingsWithConsumption];
       break;
   }
 
   if (filteredReadings.length === 0) {
     analysisResult.innerHTML = `
-      <div class="alert alert-info">
+      <div class="alert alert-info" style="grid-column: 1 / -1;">
         <i class="fas fa-info-circle"></i> Aucune donnée pour la période sélectionnée
       </div>
     `;
-    return;
+    filteredReadings = []; // S'assurer que c'est vide pour le graphique
   }
 
   const totalConsumption = filteredReadings.reduce((sum, r) => sum + r.consumption, 0);
   const totalCost = filteredReadings.reduce((sum, r) => sum + r.cost, 0);
-  const averageDaily = totalConsumption / filteredReadings.length;
-  const maxConsumption = Math.max(...filteredReadings.map(r => r.consumption));
-  const minConsumption = Math.min(...filteredReadings.map(r => r.consumption));
+  const averageDaily = filteredReadings.length > 0 ? (totalConsumption / filteredReadings.length) : 0;
+  const maxConsumption = filteredReadings.length > 0 ? Math.max(...filteredReadings.map(r => r.consumption)) : 0;
 
   analysisResult.innerHTML = `
-    <div class="analysis-stats">
-      <div class="stat-card">
-        <h4>Consommation totale</h4>
-        <p class="stat-value">${totalConsumption.toFixed(2)} kWh</p>
-      </div>
-      <div class="stat-card">
-        <h4>Coût total</h4>
-        <p class="stat-value">${Math.round(totalCost)} FCFA</p>
-      </div>
-      <div class="stat-card">
-        <h4>Moyenne journalière</h4>
-        <p class="stat-value">${averageDaily.toFixed(2)} kWh/jour</p>
-      </div>
-      <div class="stat-card">
-        <h4>Pic de consommation</h4>
-        <p class="stat-value">${maxConsumption.toFixed(2)} kWh</p>
-      </div>
+    <div class="stat-card" style="background: #f8f9fa; color: #333; box-shadow: none; border: 1px solid #eee;">
+      <div class="stat-number">${totalConsumption.toFixed(2)}</div>
+      <div class="stat-label">kWh Total</div>
+    </div>
+    <div class="stat-card" style="background: #f8f9fa; color: #333; box-shadow: none; border: 1px solid #eee;">
+      <div class="stat-number">${Math.round(totalCost)}</div>
+      <div class="stat-label">FCFA Total</div>
+    </div>
+    <div class="stat-card" style="background: #f8f9fa; color: #333; box-shadow: none; border: 1px solid #eee;">
+      <div class="stat-number">${averageDaily.toFixed(2)}</div>
+      <div class="stat-label">kWh/jour (Moy)</div>
+    </div>
+    <div class="stat-card" style="background: #f8f9fa; color: #333; box-shadow: none; border: 1px solid #eee;">
+      <div class="stat-number">${maxConsumption.toFixed(2)}</div>
+      <div class="stat-label">Pic (kWh)</div>
     </div>
   `;
+
+  // --- Mettre à jour le graphique de l'historique ---
+  if (historyChartInstance) {
+    const labels = filteredReadings.map(r => formatDate(r.date));
+    const data = filteredReadings.map(r => r.consumption);
+    
+    historyChartInstance.data.labels = labels;
+    historyChartInstance.data.datasets[0].data = data;
+    historyChartInstance.options.plugins.title.text = `Consommation des ${filteredReadings.length} relevés`;
+    historyChartInstance.update();
+  }
 }
+
 
 function saveToLocalStorage() {
   localStorage.setItem('meterReadings', JSON.stringify(meterReadings));
@@ -537,6 +599,7 @@ function saveToLocalStorage() {
   localStorage.setItem('settings', JSON.stringify(settings));
 }
 
+// --- Fonction loadFromLocalStorage (Modifiée) ---
 function loadFromLocalStorage() {
   const savedReadings = localStorage.getItem('meterReadings');
   const savedRecharges = localStorage.getItem('recharges');
@@ -544,18 +607,29 @@ function loadFromLocalStorage() {
 
   if (savedReadings) meterReadings = JSON.parse(savedReadings);
   if (savedRecharges) recharges = JSON.parse(savedRecharges);
-  if (savedSettings) settings = JSON.parse(savedSettings);
+  
+  if (savedSettings) {
+    settings = JSON.parse(savedSettings);
+    // Ajout d'une vérification pour les anciens utilisateurs qui avaient tariff1/tariff2
+    if (!settings.tariffType) {
+      settings.tariffType = "domestique-pp";
+      settings.tva = settings.tva || 18; // Garde l'ancienne TVA si elle existe
+    }
+  }
 
   // Mettre à jour les champs de paramètres
-  document.getElementById('tariff1').value = settings.tariff1;
-  document.getElementById('tariff2').value = settings.tariff2;
+  document.getElementById('tariffType').value = settings.tariffType;
   document.getElementById('tva').value = settings.tva;
 
+  recalculateAllCosts(); // S'assurer que les coûts sont à jour avec les tarifs chargés
   updateDashboard();
   updateHistoryTable();
+  updateRechargeHistoryTable(); // Ajout
 }
 
-function exportData() {
+// --- Fonction exportData (Modifiée) ---
+function exportData(event) {
+  event.preventDefault(); // Empêche le lien de sauter
   const data = {
     meterReadings: meterReadings,
     recharges: recharges,
@@ -567,7 +641,7 @@ function exportData() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `consommation-export-${new Date().toISOString().split('T')[0]}.json`;
+  a.download = `sama-woyofal-backup-${new Date().toISOString().split('T')[0]}.json`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -583,31 +657,47 @@ function importData(event) {
   try {
     const data = JSON.parse(e.target.result);
     
-    if (data.meterReadings) meterReadings = data.meterReadings;
-    if (data.recharges) recharges = data.recharges;
-    if (data.settings) settings = data.settings;
+    // Valider un peu les données
+    if (data.meterReadings && data.recharges && data.settings) {
+      if (confirm("Importer ce fichier écrasera vos données actuelles. Continuer ?")) {
+        meterReadings = data.meterReadings;
+        recharges = data.recharges;
+        settings = data.settings;
 
-    saveToLocalStorage();
-    updateDashboard();
-    updateHistoryTable();
+        saveToLocalStorage(); // Sauvegarde les nouvelles données
+        loadFromLocalStorage(); // Recharge tout pour être sûr
+        
+        showMessage('importMessage');
+      }
+    } else {
+      showError('Fichier de sauvegarde invalide ou corrompu.');
+    }
     
-    showMessage('importMessage');
     event.target.value = ''; // Reset file input
   } catch (error) {
-    showError('Erreur lors de l\'import du fichier');
+    showError('Erreur lors de la lecture du fichier.');
+    event.target.value = ''; // Reset file input
   }
   };
   reader.readAsText(file);
 }
 
-function resetData() {
-  if (confirm('Êtes-vous sûr de vouloir réinitialiser toutes les données ? Cette action est irréversible.')) {
+// --- Fonction resetData (Modifiée) ---
+function resetData(event) {
+  event.preventDefault(); // Empêche le lien de sauter
+  if (confirm('Êtes-vous sûr de vouloir réinitialiser TOUTES les données ? Cette action est irréversible.')) {
     meterReadings = [];
     recharges = [];
+    // Ne pas réinitialiser les settings, seulement les données
     localStorage.removeItem('meterReadings');
     localStorage.removeItem('recharges');
+    
+    // Mettre à jour tous les affichages
     updateDashboard();
     updateHistoryTable();
+    updateRechargeHistoryTable();
+    updateAnalysis();
+    
     showMessage('resetMessage');
   }
 }
