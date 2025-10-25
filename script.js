@@ -13,7 +13,9 @@ let settings = {
   tariffType: "domestique-pp", // Valeur par défaut
   tva: 18,
   currentCredit: 0, // Ajout pour le suivi de crédit
-  theme: 'system' // Ajout pour le thème
+  theme: 'system', // Ajout pour le thème
+  goalType: 'fcfa', // AJOUT ('fcfa' ou 'kwh')
+  goalValue: 0      // AJOUT (valeur numérique)
 };
 
 // Chart instance
@@ -49,7 +51,7 @@ function initializeDates() {
   const monthNames = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
     "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
   const now = new Date();
-  document.getElementById("currentMonth").textContent = 
+  document.getElementById("currentMonth").textContent =
     monthNames[now.getMonth()] + " " + now.getFullYear();
 }
 
@@ -59,12 +61,12 @@ function showPage(pageId, event) {
   document.querySelectorAll('.page').forEach(page => {
     page.classList.remove('active');
   });
-  
+
   // Remove active class from all nav links
   document.querySelectorAll('.nav-link').forEach(link => {
     link.classList.remove('active');
   });
-  
+
   // Show selected page
   document.getElementById(pageId).classList.add('active');
 
@@ -92,7 +94,7 @@ function showPage(pageId, event) {
  */
 function applyTheme(theme) {
   const html = document.documentElement; // Cible la balise <html>
-  
+
   // 1. Enlève d'abord les classes de forçage
   html.classList.remove('theme-light', 'theme-dark');
 
@@ -103,7 +105,7 @@ function applyTheme(theme) {
     html.classList.add('theme-dark');
   }
   // Si theme === 'system', on ne fait rien, le CSS @media s'en occupe.
-  
+
   // 3. Met à jour l'état "actif" des boutons
   document.getElementById('theme-btn-light').classList.toggle('active', theme === 'light');
   document.getElementById('theme-btn-dark').classList.toggle('active', theme === 'dark');
@@ -128,9 +130,9 @@ function calculateCost(kwh) {
   const tva = settings.tva / 100;
 
   let cost = 0;
-  
+
   // Hypothèse de palier : 150 kWh pour domestique, 250 kWh pour pro
-  const palier = (settings.tariffType.startsWith("domestique")) ? 150 : 250; 
+  const palier = (settings.tariffType.startsWith("domestique")) ? 150 : 250;
 
   if (kwh <= palier) {
     cost = kwh * tariff1;
@@ -148,6 +150,14 @@ function recalculateAllCosts() {
   });
 }
 
+// Fonction Helper pour ajouter des jours à une date
+function addDays(date, days) {
+  const result = new Date(date);
+  result.setDate(result.getDate() + Math.floor(days)); // Utilise Math.floor pour jours entiers
+  return result;
+}
+
+
 function addMeterReading() {
   const date = document.getElementById('meterDate').value;
   const reading = parseFloat(document.getElementById('meterReading').value);
@@ -162,7 +172,7 @@ function addMeterReading() {
   if (meterReadings.length > 0) {
     // Trouver le dernier relevé par date
     const lastReading = [...meterReadings].sort((a, b) => new Date(a.date) - new Date(b.date)).pop();
-    
+
     if (reading < lastReading.reading) {
       showError('La nouvelle valeur doit être supérieure à la dernière enregistrée.');
       return;
@@ -176,7 +186,7 @@ function addMeterReading() {
         settings.currentCredit = 0;
       }
     }
-    
+
   } else {
     // Premier relevé, pas de consommation à calculer
     consumption = 0;
@@ -238,25 +248,47 @@ function addRecharge() {
   saveToLocalStorage(); // Sauvegarde le settings.currentCredit mis à jour
 }
 
-// --- Fonction saveTariffs (Modifiée) ---
-function saveTariffs() {
+// --- Fonction saveSettings (remplace saveTariffs) ---
+function saveSettings() {
+  // Sauvegarde des tarifs et TVA
   settings.tariffType = document.getElementById('tariffType').value;
   settings.tva = parseFloat(document.getElementById('tva').value);
 
-  // AJOUT : Sauvegarder le crédit actuel
+  // Sauvegarde du crédit actuel
   const creditInput = parseFloat(document.getElementById('currentCredit').value);
   if (!isNaN(creditInput) && creditInput >= 0) {
     settings.currentCredit = creditInput;
   }
 
+  // AJOUT : Sauvegarde de l'objectif
+  settings.goalType = document.getElementById('goalType').value;
+  const goalInput = parseFloat(document.getElementById('goalValue').value);
+  settings.goalValue = (!isNaN(goalInput) && goalInput > 0) ? goalInput : 0; // Met 0 si invalide ou vide
+
   showMessage('settingsMessage');
-  
-  recalculateAllCosts(); 
-  
-  updateDashboard(); // Mettre à jour le dashboard (coût et crédit)
-  updateHistoryTable(); // Mettre à jour l'historique (coûts)
+
+  recalculateAllCosts();
+  updateDashboard(); // Mettre à jour le dashboard (coût, crédit, objectif)
+  updateHistoryTable();
   saveToLocalStorage();
 }
+
+// NOUVELLE FONCTION pour mettre à jour le label de l'objectif
+function updateGoalLabel() {
+  const goalType = document.getElementById('goalType').value;
+  const label = document.getElementById('goalValueLabel');
+  const input = document.getElementById('goalValue');
+  if (goalType === 'fcfa') {
+    label.innerHTML = '<i class="fas fa-calculator"></i> Valeur de l\'objectif (FCFA)';
+    input.placeholder = "Ex: 10000";
+    input.step = "100"; // Pas de 100 pour FCFA
+  } else {
+    label.innerHTML = '<i class="fas fa-bolt"></i> Valeur de l\'objectif (kWh)';
+    input.placeholder = "Ex: 200";
+    input.step = "1"; // Pas de 1 pour kWh
+  }
+}
+
 
 function showMessage(messageId) {
   const message = document.getElementById(messageId);
@@ -282,10 +314,10 @@ function showError(message) {
     errorDiv.style.boxShadow = '0 5px 15px rgba(0,0,0,0.2)';
     document.body.appendChild(errorDiv);
   }
-  
+
   errorDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
   errorDiv.style.display = 'block';
-  
+
   // Cache le message après 3 secondes
   setTimeout(() => {
     if (errorDiv) errorDiv.style.display = 'none';
@@ -300,7 +332,7 @@ function showRandomTip() {
 
 function initializeConsumptionChart() {
   const ctx = document.getElementById('consumptionChart').getContext('2d');
-  
+
   const gradient = ctx.createLinearGradient(0, 0, 0, 300);
   gradient.addColorStop(0, 'rgba(0, 122, 255, 0.4)');
   gradient.addColorStop(1, 'rgba(0, 122, 255, 0)');
@@ -387,17 +419,17 @@ function updateConsumptionChart() {
 
   // On ne prend que les relevés qui ont une consommation (donc > 1er relevé)
   const consumptionData = meterReadings.filter(r => r.consumption > 0).slice(-30);
-  
+
   const labels = consumptionData.map(reading => formatDate(reading.date));
   const data = consumptionData.map(reading => reading.consumption);
 
   consumptionChartInstance.data.labels = labels;
   consumptionChartInstance.data.datasets[0].data = data;
-  
+
   const dayCount = consumptionData.length;
-  consumptionChartInstance.options.plugins.title.text = 
+  consumptionChartInstance.options.plugins.title.text =
     `Consommation des ${dayCount} derniers relevés`;
-  
+
   consumptionChartInstance.update();
 }
 
@@ -408,36 +440,36 @@ function updateDashboard() {
   // Filter readings for current month
   const monthReadings = meterReadings.filter(reading => {
     const readingDate = new Date(reading.date);
-    return readingDate.getMonth() === currentMonth && 
+    return readingDate.getMonth() === currentMonth &&
            readingDate.getFullYear() === currentYear;
   });
 
   // On ne compte que les relevés qui ont une consommation
   const validReadings = monthReadings.filter(r => r.consumption > 0);
-
   const totalConsumption = validReadings.reduce((sum, reading) => sum + reading.consumption, 0);
   const totalCost = validReadings.reduce((sum, reading) => sum + reading.cost, 0);
   const daysCount = validReadings.length;
   const dailyAverage = daysCount > 0 ? (totalConsumption / daysCount) : 0;
 
-  // Update dashboard stats
+  // --- Update dashboard stats ---
   document.getElementById('monthConsumption').textContent = totalConsumption.toFixed(2);
   document.getElementById('monthCost').textContent = Math.round(totalCost);
   document.getElementById('dailyAverage').textContent = dailyAverage.toFixed(2);
   document.getElementById('daysInMonth').textContent = daysCount;
 
-  // --- AJOUT : Mise à jour du crédit et des jours restants ---
+  // --- Mise à jour du crédit et des jours restants ---
   const creditDisplay = document.getElementById('currentCreditDisplay');
   const daysDisplay = document.getElementById('daysRemainingDisplay');
-  const daysCard = daysDisplay.closest('.stat-card'); // Pour le style
+  const daysCard = daysDisplay.closest('.stat-card');
+  let daysRemaining = 0; // Variable pour la prévision
 
   creditDisplay.textContent = settings.currentCredit.toFixed(1);
 
   if (dailyAverage > 0 && settings.currentCredit > 0) {
-    const daysRemaining = settings.currentCredit / dailyAverage;
+    daysRemaining = settings.currentCredit / dailyAverage;
     daysDisplay.textContent = Math.floor(daysRemaining); // Arrondir aux jours pleins
 
-    // Changer la couleur de la carte des jours restants
+    // Changer couleur jours restants
     if (daysRemaining <= 3) {
       daysCard.style.background = "linear-gradient(135deg, #FF3B30, #E02B20)"; // Rouge
     } else if (daysRemaining <= 7) {
@@ -446,18 +478,96 @@ function updateDashboard() {
       daysCard.style.background = "linear-gradient(135deg, #667eea, #764ba2)"; // Bleu (défaut)
     }
 
-  } else if (settings.currentCredit <= 0) {
-    daysDisplay.textContent = "0";
-    daysCard.style.background = "linear-gradient(135deg, #FF3B30, #E02B20)"; // Rouge
   } else {
-    daysDisplay.textContent = "-"; // Si on n'a pas de moyenne
-    daysCard.style.background = "linear-gradient(135deg, #667eea, #764ba2)"; // Bleu
+      daysDisplay.textContent = (settings.currentCredit <= 0) ? "0" : "-";
+      daysCard.style.background = (settings.currentCredit <= 0) ? "linear-gradient(135deg, #FF3B30, #E02B20)" : "linear-gradient(135deg, #667eea, #764ba2)";
   }
-  // --- FIN DE L'AJOUT ---
 
-  // Mettre à jour le graphique
+  // --- Mise à jour de l'objectif mensuel ---
+  const goalProgressText = document.getElementById('goalProgressText');
+  const goalPercentageText = document.getElementById('goalPercentage');
+  const goalProgressBar = document.getElementById('goalProgressBar');
+  const goalStatusText = document.getElementById('goalStatusText');
+
+  if (settings.goalValue > 0) {
+    let currentProgress = (settings.goalType === 'fcfa') ? totalCost : totalConsumption;
+    let goalUnit = (settings.goalType === 'fcfa') ? " FCFA" : " kWh";
+    const percentage = Math.min(100, Math.round((currentProgress / settings.goalValue) * 100));
+
+    goalProgressText.textContent = `${Math.round(currentProgress)} / ${settings.goalValue}${goalUnit}`;
+    goalPercentageText.textContent = `${percentage}%`;
+    goalProgressBar.style.width = `${percentage}%`;
+
+    if (percentage >= 100) {
+      goalProgressBar.style.backgroundColor = 'var(--color-danger)';
+      goalStatusText.textContent = "⚠️ Objectif dépassé !";
+      goalStatusText.style.color = 'var(--color-danger)';
+    } else if (percentage >= 80) {
+      goalProgressBar.style.backgroundColor = 'var(--color-warning)';
+      goalStatusText.textContent = "🟠 Attention, vous approchez de l'objectif.";
+      goalStatusText.style.color = 'var(--color-warning)';
+    } else {
+      goalProgressBar.style.backgroundColor = 'var(--color-success)';
+      goalStatusText.textContent = "🟢 Vous êtes dans les clous.";
+      goalStatusText.style.color = 'var(--color-success)';
+    }
+  } else {
+    goalProgressText.textContent = "Aucun objectif défini";
+    goalPercentageText.textContent = "-";
+    goalProgressBar.style.width = `0%`;
+    goalProgressBar.style.backgroundColor = 'var(--color-success)';
+    goalStatusText.textContent = "Définissez un objectif dans les paramètres.";
+    goalStatusText.style.color = 'var(--text-secondary)';
+  }
+
+  // --- NOUVEAU : Mise à jour du Suivi de Tranche ---
+  const tierProgressText = document.getElementById('tierProgressText');
+  const tierPercentageText = document.getElementById('tierPercentage');
+  const tierProgressBar = document.getElementById('tierProgressBar');
+  const tierStatusText = document.getElementById('tierStatusText');
+
+  // Déterminer le seuil de la tranche 1
+  const tier1Limit = (settings.tariffType.startsWith("domestique")) ? 150 : 250; // Seuil T1
+  const consumptionInTier1 = Math.min(totalConsumption, tier1Limit);
+  const tierPercentage = Math.round((consumptionInTier1 / tier1Limit) * 100);
+
+  tierProgressText.textContent = `${consumptionInTier1.toFixed(1)} / ${tier1Limit} kWh`;
+  tierPercentageText.textContent = `${tierPercentage}%`;
+  tierProgressBar.style.width = `${tierPercentage}%`;
+
+  if (totalConsumption > tier1Limit) {
+    tierProgressBar.style.backgroundColor = 'var(--color-warning)'; // Ou danger si on préfère
+    tierStatusText.textContent = `🟠 Vous êtes passé en Tranche 2 (${(totalConsumption - tier1Limit).toFixed(1)} kWh)`;
+    tierStatusText.style.color = 'var(--color-warning)';
+    tierPercentageText.style.backgroundColor = 'rgba(255, 149, 0, 0.1)'; // Fond orange clair
+    tierPercentageText.style.color = 'var(--color-warning)';
+  } else {
+    tierProgressBar.style.backgroundColor = 'var(--color-success)';
+    tierStatusText.textContent = `🟢 Vous êtes en Tranche 1. Encore ${(tier1Limit - totalConsumption).toFixed(1)} kWh avant la Tranche 2.`;
+    tierStatusText.style.color = 'var(--color-success)';
+    tierPercentageText.style.backgroundColor = 'rgba(52, 199, 89, 0.1)'; // Fond vert clair
+    tierPercentageText.style.color = 'var(--color-success)';
+  }
+  // --- FIN Suivi de Tranche ---
+
+  // --- NOUVEAU : Mise à jour de la Prévision de Recharge ---
+  const predictionDateElement = document.getElementById('rechargePredictionDate');
+  if (daysRemaining > 0) {
+      const predictionDate = addDays(new Date(), daysRemaining);
+      // Formatage de la date (ex: Mercredi 5 Novembre)
+      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      predictionDateElement.textContent = predictionDate.toLocaleDateString('fr-FR', options);
+  } else if (settings.currentCredit <= 0) {
+      predictionDateElement.textContent = "Crédit épuisé ! Rechargez maintenant.";
+  } else {
+      predictionDateElement.textContent = "Estimation indisponible (pas assez de données de consommation).";
+  }
+  // --- FIN Prévision Recharge ---
+
+  // Mettre à jour le graphique consommation
   updateConsumptionChart();
 }
+
 
 function updateHistoryTable() {
   const tbody = document.getElementById('historyTableBody');
@@ -482,7 +592,7 @@ function updateHistoryTable() {
   [...validReadings].reverse().forEach((reading) => {
     // Trouver l'index original pour la suppression
     const originalIndex = meterReadings.findIndex(r => r.date === reading.date && r.reading === reading.reading);
-    
+
     const row = document.createElement('tr');
     row.innerHTML = `
       <td data-label="Date">${formatDate(reading.date)}</td>
@@ -552,7 +662,7 @@ function formatDate(dateString) {
 
 function deleteReading(index) {
   if (confirm('Êtes-vous sûr de vouloir supprimer ce relevé ?')) {
-    
+
     // --- AJOUT : Recréditer le crédit avant de supprimer ---
     const readingToCancel = meterReadings[index];
     if (readingToCancel && readingToCancel.consumption > 0) {
@@ -561,7 +671,7 @@ function deleteReading(index) {
     // --- Fin Ajout ---
 
     meterReadings.splice(index, 1);
-    
+
     // Recalculer la consommation après suppression
     recalculateConsumption();
 
@@ -592,7 +702,7 @@ function recalculateConsumption() {
 // --- Nouvelle Fonction ---
 function deleteRecharge(index) {
   if (confirm('Êtes-vous sûr de vouloir supprimer cette recharge ?')) {
-    
+
     // --- AJOUT : Décréditer le crédit avant de supprimer ---
     const rechargeToCancel = recharges[index];
     if (rechargeToCancel && rechargeToCancel.units > 0) {
@@ -600,9 +710,9 @@ function deleteRecharge(index) {
       if (settings.currentCredit < 0) settings.currentCredit = 0;
     }
     // --- Fin Ajout ---
-    
+
     recharges.splice(index, 1);
-    
+
     updateRechargeHistoryTable();
     updateDashboard(); // Mettre à jour le crédit
     saveToLocalStorage();
@@ -613,7 +723,7 @@ function deleteRecharge(index) {
 function updateAnalysis() {
   const period = document.getElementById('analysisPeriod').value;
   const analysisResult = document.getElementById('analysisResult');
-  
+
   const readingsWithConsumption = meterReadings.filter(r => r.consumption > 0);
 
   if (readingsWithConsumption.length < 1) {
@@ -665,7 +775,7 @@ function updateAnalysis() {
 
   // Utilise les styles des stat-card normales, mais sans couleur de fond
   analysisResult.innerHTML = `
-    <div class="stat-card"> 
+    <div class="stat-card">
       <div class="stat-number">${totalConsumption.toFixed(2)}</div>
       <div class="stat-label">kWh Total</div>
     </div>
@@ -687,7 +797,7 @@ function updateAnalysis() {
   if (historyChartInstance) {
     const labels = filteredReadings.map(r => formatDate(r.date));
     const data = filteredReadings.map(r => r.consumption);
-    
+
     historyChartInstance.data.labels = labels;
     historyChartInstance.data.datasets[0].data = data;
     historyChartInstance.options.plugins.title.text = `Consommation des ${filteredReadings.length} relevés`;
@@ -710,27 +820,32 @@ function loadFromLocalStorage() {
 
   if (savedReadings) meterReadings = JSON.parse(savedReadings);
   if (savedRecharges) recharges = JSON.parse(savedRecharges);
-  
+
   if (savedSettings) {
     // Fusionner les paramètres sauvegardés avec les défauts
     const loadedSettings = JSON.parse(savedSettings);
-    settings = { ...settings, ...loadedSettings };
-    
-    // Ajout d'une vérification pour les anciens utilisateurs qui avaient tariff1/tariff2
+    settings = { ...settings, ...loadedSettings }; // Utilise les valeurs par défaut si non trouvées
+
+    // Assure la compatibilité avec anciennes versions
     if (loadedSettings.tariff1 && !loadedSettings.tariffType) {
       settings.tariffType = "domestique-pp";
     }
   }
 
-  // --- AJOUT : Appliquer le thème sauvegardé ---
-  applyTheme(settings.theme); 
-  // --- FIN DE L'AJOUT ---
+  // --- Appliquer le thème sauvegardé ---
+  applyTheme(settings.theme);
+  // --- FIN ---
 
   // Mettre à jour les champs de paramètres
   document.getElementById('tariffType').value = settings.tariffType;
   document.getElementById('tva').value = settings.tva;
-  
   document.getElementById('currentCredit').value = settings.currentCredit.toFixed(1);
+
+  // AJOUT : Mettre à jour les champs de l'objectif
+  document.getElementById('goalType').value = settings.goalType;
+  document.getElementById('goalValue').value = settings.goalValue > 0 ? settings.goalValue : ""; // Ne pas afficher 0
+  updateGoalLabel(); // Met à jour le label FCFA/kWh
+  // FIN AJOUT
 
   recalculateAllCosts(); // S'assurer que les coûts sont à jour avec les tarifs chargés
   updateDashboard();
@@ -780,13 +895,31 @@ function exportAsTXT(event) {
   } else {
     txtRows.push("Jours restants estimes: (pas assez de données)");
   }
+  // Prévision
+  const predictionText = document.getElementById('rechargePredictionDate').textContent;
+  txtRows.push(`Prochaine recharge estimée: ${predictionText}`);
+
   txtRows.push(nl);
+
+   // --- Section 1.5: Objectif & Tranche ---
+   txtRows.push("--- Objectif & Tranche du Mois ---");
+   const goalText = document.getElementById('goalProgressText').textContent;
+   const goalPerc = document.getElementById('goalPercentage').textContent;
+   const goalStat = document.getElementById('goalStatusText').textContent;
+   txtRows.push(`Objectif: ${goalText} (${goalPerc}) - ${goalStat}`);
+
+   const tierText = document.getElementById('tierProgressText').textContent;
+   const tierPerc = document.getElementById('tierPercentage').textContent;
+   const tierStat = document.getElementById('tierStatusText').textContent;
+   txtRows.push(`Tranche 1: ${tierText} (${tierPerc}) - ${tierStat}`);
+   txtRows.push(nl);
+
 
   // --- Section 2: Relevés de consommation ---
   txtRows.push("--- Historique des Consommations ---");
   txtRows.push("Date       | Consommé (kWh) | Coût (FCFA)");
   txtRows.push("-------------------------------------------");
-  
+
   const validReadings = meterReadings.filter(r => r.consumption > 0);
   if (validReadings.length > 0) {
     [...validReadings].reverse().forEach(reading => { // Du plus récent au plus ancien
@@ -815,14 +948,14 @@ function exportAsTXT(event) {
   } else {
     txtRows.push("Aucune recharge enregistrée.");
   }
-  
+
   // Joindre toutes les lignes
   const txtContent = txtRows.join(nl);
 
   // Créer le Blob
   const blob = new Blob([txtContent], { type: 'text/plain;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
-  
+
   const a = document.createElement('a');
   a.href = url;
   a.download = `Rapport-Sama-Woyofal-${new Date().toISOString().split('T')[0]}.txt`;
@@ -841,7 +974,7 @@ function importData(event) {
   reader.onload = function(e) {
   try {
     const data = JSON.parse(e.target.result);
-    
+
     // Valider un peu les données
     if (data.meterReadings && data.recharges && data.settings) {
       if (confirm("Charger ce fichier écrasera vos données actuelles. Continuer ?")) {
@@ -851,13 +984,13 @@ function importData(event) {
 
         saveToLocalStorage(); // Sauvegarde les nouvelles données
         loadFromLocalStorage(); // Recharge tout pour être sûr
-        
+
         showMessage('importMessage');
       }
     } else {
       showError('Fichier de sauvegarde invalide ou corrompu.');
     }
-    
+
     event.target.value = ''; // Reset file input
   } catch (error) {
     showError('Erreur lors de la lecture du fichier.');
@@ -873,22 +1006,28 @@ function resetData(event) {
   if (confirm('Êtes-vous sûr de vouloir réinitialiser TOUTES les données (relevés et recharges) ? Cette action est irréversible.')) {
     meterReadings = [];
     recharges = [];
-    
-    // AJOUT : Réinitialiser aussi le crédit
-    settings.currentCredit = 0; 
+
+    // Réinitialiser aussi le crédit et l'objectif
+    settings.currentCredit = 0;
+    settings.goalType = 'fcfa';
+    settings.goalValue = 0;
     document.getElementById('currentCredit').value = ""; // Vider le champ
-    
+    document.getElementById('goalType').value = 'fcfa';
+    document.getElementById('goalValue').value = "";
+    updateGoalLabel();
+    // FIN Réinitialisation
+
     localStorage.removeItem('meterReadings');
     localStorage.removeItem('recharges');
-    // On sauvegarde les settings (pour garder le crédit à 0)
-    saveToLocalStorage(); 
-    
+    // On sauvegarde les settings (pour garder crédit et objectif à 0)
+    saveToLocalStorage();
+
     // Mettre à jour tous les affichages
     updateDashboard();
     updateHistoryTable();
     updateRechargeHistoryTable();
     updateAnalysis();
-    
+
     showMessage('resetMessage');
   }
 }

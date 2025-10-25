@@ -14,229 +14,271 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-<div class="container"> 
-  <div class="header"> 
-    <div class="logo">Sama-Woyofal</div> 
-    <div class="user-info"> 
-      <span id="currentMonth"></span> 
-      <span><i class="fas fa-user"></i> Utilisateur</span> 
-    </div> 
-  </div> 
- 
-  <nav class="nav"> 
-    <ul class="nav-list"> 
-      <li class="nav-item"> 
-        <a href="#" class="nav-link active" onclick="showPage('dashboard', event)"> 
-          <i class="fas fa-home"></i> Accueil 
-        </a> 
-      </li> 
-      <li class="nav-item"> 
-        <a href="#" class="nav-link" onclick="showPage('input', event)"> 
-          <i class="fas fa-keyboard"></i> Saisir 
-        </a> 
-      </li> 
-      <li class="nav-item"> 
-        <a href="#" class="nav-link" onclick="showPage('history', event)"> 
-          <i class="fas fa-history"></i> Historique 
-        </a> 
-      </li> 
-      <li class="nav-item"> 
-        <a href="#" class="nav-link" onclick="showPage('settings', event)"> 
-          <i class="fas fa-cog"></i> Paramètres 
-        </a> 
-      </li> 
-    </ul> 
-  </nav> 
- 
-  <div class="main-content"> 
-    <div id="dashboard" class="page active"> 
-      <div class="stats-grid"> 
-        <div class="stat-card"> 
-          <div class="stat-number" id="monthConsumption">0</div> 
-          <div class="stat-label">kWh ce mois</div> 
-        </div> 
-        <div class="stat-card"> 
-          <div class="stat-number" id="monthCost">0</div> 
-          <div class="stat-label">FCFA coût estimé</div> 
-        </div> 
-        <div class="stat-card"> 
-          <div class="stat-number" id="dailyAverage">0</div> 
-          <div class="stat-label">kWh/jour en moyenne</div> 
-        </div> 
-        <div class="stat-card"> 
-          <div class="stat-number" id="daysInMonth">0</div> 
-          <div class="stat-label">jours enregistrés</div> 
-        </div> 
-        
-        <div class="stat-card stat-card-credit"> 
-          <div class="stat-number" id="currentCreditDisplay">0</div> 
-          <div class="stat-label">Crédit restant (kWh)</div> 
-        </div> 
-        
-        <div class="stat-card stat-card-days"> 
-          <div class="stat-number" id="daysRemainingDisplay">0</div> 
-          <div class="stat-label">Jours restants (Estimé)</div> 
-        </div> 
-        
-      </div> 
- 
-      <div class="card"> 
-        <div class="card-header"> 
-          <div class="card-icon"><i class="fas fa-chart-line"></i></div> 
-          <h2 class="card-title">Évolution de votre consommation</h2> 
-        </div> 
-        <div class="chart-container"> 
+<div class="container">
+  <div class="header">
+    <div class="logo">Sama-Woyofal</div>
+    <div class="user-info">
+      <span id="currentMonth"></span>
+      <span><i class="fas fa-user"></i> Utilisateur</span>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <ul class="nav-list">
+      <li class="nav-item">
+        <a href="#" class="nav-link active" onclick="showPage('dashboard', event)">
+          <i class="fas fa-home"></i> Accueil
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="#" class="nav-link" onclick="showPage('input', event)">
+          <i class="fas fa-keyboard"></i> Saisir
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="#" class="nav-link" onclick="showPage('history', event)">
+          <i class="fas fa-history"></i> Historique
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="#" class="nav-link" onclick="showPage('settings', event)">
+          <i class="fas fa-cog"></i> Paramètres
+        </a>
+      </li>
+    </ul>
+  </nav>
+
+  <div class="main-content">
+    <div id="dashboard" class="page active">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-number" id="monthConsumption">0</div>
+          <div class="stat-label">kWh ce mois</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="monthCost">0</div>
+          <div class="stat-label">FCFA coût estimé</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="dailyAverage">0</div>
+          <div class="stat-label">kWh/jour en moyenne</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="daysInMonth">0</div>
+          <div class="stat-label">jours enregistrés</div>
+        </div>
+
+        <div class="stat-card stat-card-credit">
+          <div class="stat-number" id="currentCreditDisplay">0</div>
+          <div class="stat-label">Crédit restant (kWh)</div>
+        </div>
+
+        <div class="stat-card stat-card-days">
+          <div class="stat-number" id="daysRemainingDisplay">0</div>
+          <div class="stat-label">Jours restants (Estimé)</div>
+        </div>
+
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon"><i class="fas fa-bullseye"></i></div>
+          <h2 class="card-title">Objectif du Mois</h2>
+        </div>
+        <div class="goal-tracker">
+          <div class="goal-info">
+            <span id="goalProgressText">0 / 0</span>
+            <span id="goalPercentage">0%</span>
+          </div>
+          <div class="progress-bar-container">
+            <div class="progress-bar" id="goalProgressBar" style="width: 0%;"></div>
+          </div>
+          <div id="goalStatusText" class="goal-status">Suivi de votre objectif mensuel.</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon"><i class="fas fa-layer-group"></i></div>
+          <h2 class="card-title">Suivi de Tranche du Mois</h2>
+        </div>
+        <div class="goal-tracker"> <div class="goal-info">
+            <span id="tierProgressText">0 / 0 kWh</span>
+            <span id="tierPercentage">0%</span>
+          </div>
+          <div class="progress-bar-container">
+            <div class="progress-bar" id="tierProgressBar" style="width: 0%;"></div>
+          </div>
+          <div id="tierStatusText" class="goal-status">Vous êtes en Tranche 1.</div>
+        </div>
+      </div>
+      <div class="card card-prediction">
+        <div class="card-header">
+          <div class="card-icon"><i class="fas fa-calendar-alt"></i></div>
+          <h2 class="card-title">Prévision de Recharge</h2>
+        </div>
+        <div class="prediction-content">
+            <i class="fas fa-history prediction-icon"></i>
+            <p>Prochaine recharge estimée autour du :</p>
+            <h3 id="rechargePredictionDate">Calcul en cours...</h3>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon"><i class="fas fa-chart-line"></i></div>
+          <h2 class="card-title">Évolution de votre consommation</h2>
+        </div>
+        <div class="chart-container">
          <canvas id="consumptionChart"></canvas>
-        </div> 
-      </div> 
- 
-      <div class="card"> 
-        <div class="card-header"> 
-          <div class="card-icon"><i class="fas fa-lightbulb"></i></div> 
-          <h2 class="card-title">Conseil du jour</h2> 
-        </div> 
-        <div class="alert alert-info"> 
-          <strong><i class="fas fa-info-circle"></i> Astuce :</strong> <span id="dailyTip">Débranchez vos appareils en veille pour économiser jusqu'à 10% sur votre facture !</span> 
-        </div> 
-      </div> 
- 
-      <div class="quick-actions"> 
-        <a href="#" class="quick-action" onclick="showPage('input', event)"> 
-          <div class="quick-action-icon"><i class="fas fa-plus-circle"></i></div> 
-          <div>Ajouter un relevé</div> 
-        </a> 
-        <a href="#" class="quick-action" onclick="showPage('history', event)"> 
-          <div class="quick-action-icon"><i class="fas fa-history"></i></div> 
-          <div>Voir l'historique</div> 
-        </a> 
-        <a href="#" class="quick-action" onclick="showPage('settings', event)"> 
-          <div class="quick-action-icon"><i class="fas fa-cog"></i></div> 
-          <div>Ajuster les paramètres</div> 
-        </a> 
-      </div> 
-    </div> 
- 
-    <div id="input" class="page"> 
-      <div class="form-grid"> 
-        <div class="card"> 
-          <div class="card-header"> 
-            <div class="card-icon"><i class="fas fa-tachometer-alt"></i></div> 
-            <h2 class="card-title">Relevé de compteur</h2> 
-          </div> 
- 
-          <div class="help-text"> 
-            <strong><i class="fas fa-info-circle"></i> Comment faire :</strong><br> 
-            1. Allez devant votre compteur Senelec<br> 
-            2. Tapez le code <strong>800</strong> puis appuyez sur la touche verte<br> 
-            3. Notez le nombre qui s'affiche (ex: 1245.7 kWh)<br> 
-            4. Entrez cette valeur ci-dessous 
-          </div> 
- 
-          <div class="form-group"> 
-            <label><i class="far fa-calendar-alt"></i> Date du relevé</label> 
-            <input type="date" id="meterDate"> 
-          </div> 
- 
-          <div class="form-group"> 
-            <label><i class="fas fa-bolt"></i> Valeur du compteur (kWh)</label> 
-            <input type="number" id="meterReading" step="0.1" placeholder="Ex: 1245.7"> 
-          </div> 
- 
-          <button class="btn btn-large" onclick="addMeterReading()"> 
-            <i class="fas fa-save"></i> Enregistrer le relevé 
-          </button> 
-        </div> 
- 
-        <div class="card"> 
-          <div class="card-header"> 
-            <div class="card-icon"><i class="fas fa-money-bill-wave"></i></div> 
-            <h2 class="card-title">Recharge Woyofal</h2> 
-          </div> 
- 
-          <div class="help-text"> 
-            <strong><i class="fas fa-info-circle"></i> Comment faire :</strong><br> 
-            1. Après avoir rechargé votre compteur<br> 
-            2. Tapez le code <strong>813</strong> pour voir votre crédit<br> 
-            3. Notez le montant que vous avez rechargé<br> 
-            4. Entrez ces informations ci-dessous 
-          </div> 
- 
-          <div class="form-group"> 
-            <label><i class="far fa-calendar-alt"></i> Date de recharge</label> 
-            <input type="date" id="rechargeDate"> 
-          </div> 
- 
-          <div class="form-group"> 
-            <label><i class="fas fa-money-bill-alt"></i> Montant en FCFA</label> 
-            <input type="number" id="rechargeAmount" placeholder="Ex: 5000"> 
-          </div> 
- 
-          <div class="form-group"> 
-            <label><i class="fas fa-bolt"></i> Unités reçues (kWh)</label> 
-            <input type="number" id="rechargeUnits" step="0.1" placeholder="Ex: 45.2"> 
-          </div> 
- 
-          <button class="btn btn-large" onclick="addRecharge()"> 
-            <i class="fas fa-save"></i> Enregistrer la recharge 
-          </button> 
-        </div> 
-      </div> 
- 
-      <div id="inputMessage" class="alert alert-success" style="display: none;"> 
-        <i class="fas fa-check-circle"></i> Données enregistrées avec succès ! 
-      </div> 
-    </div> 
- 
-    <div id="history" class="page"> 
-      <div class="card"> 
-        <div class="card-header"> 
-          <div class="card-icon"><i class="fas fa-chart-bar"></i></div> 
-          <h2 class="card-title">Analyse de consommation</h2> 
-        </div> 
- 
-        <div class="form-group"> 
-          <label><i class="far fa-calendar-alt"></i> Période d'analyse</label> 
-          <select id="analysisPeriod" onchange="updateAnalysis()"> 
-            <option value="7days">7 derniers jours</option> 
-            <option value="30days">30 derniers jours</option> 
-            <option value="all">Toute la période</option> 
-          </select> 
-        </div> 
-        
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon"><i class="fas fa-lightbulb"></i></div>
+          <h2 class="card-title">Conseil du jour</h2>
+        </div>
+        <div class="alert alert-info">
+          <strong><i class="fas fa-info-circle"></i> Astuce :</strong> <span id="dailyTip">Débranchez vos appareils en veille pour économiser jusqu'à 10% sur votre facture !</span>
+        </div>
+      </div>
+
+      <div class="quick-actions">
+        <a href="#" class="quick-action" onclick="showPage('input', event)">
+          <div class="quick-action-icon"><i class="fas fa-plus-circle"></i></div>
+          <div>Ajouter un relevé</div>
+        </a>
+        <a href="#" class="quick-action" onclick="showPage('history', event)">
+          <div class="quick-action-icon"><i class="fas fa-history"></i></div>
+          <div>Voir l'historique</div>
+        </a>
+        <a href="#" class="quick-action" onclick="showPage('settings', event)">
+          <div class="quick-action-icon"><i class="fas fa-cog"></i></div>
+          <div>Ajuster les paramètres</div>
+        </a>
+      </div>
+    </div>
+
+    <div id="input" class="page">
+      <div class="form-grid">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon"><i class="fas fa-tachometer-alt"></i></div>
+            <h2 class="card-title">Relevé de compteur</h2>
+          </div>
+
+          <div class="help-text">
+            <strong><i class="fas fa-info-circle"></i> Comment faire :</strong><br>
+            1. Allez devant votre compteur Senelec<br>
+            2. Tapez le code <strong>800</strong> puis appuyez sur la touche verte<br>
+            3. Notez le nombre qui s'affiche (ex: 1245.7 kWh)<br>
+            4. Entrez cette valeur ci-dessous
+          </div>
+
+          <div class="form-group">
+            <label><i class="far fa-calendar-alt"></i> Date du relevé</label>
+            <input type="date" id="meterDate">
+          </div>
+
+          <div class="form-group">
+            <label><i class="fas fa-bolt"></i> Valeur du compteur (kWh)</label>
+            <input type="number" id="meterReading" step="0.1" placeholder="Ex: 1245.7">
+          </div>
+
+          <button class="btn btn-large" onclick="addMeterReading()">
+            <i class="fas fa-save"></i> Enregistrer le relevé
+          </button>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon"><i class="fas fa-money-bill-wave"></i></div>
+            <h2 class="card-title">Recharge Woyofal</h2>
+          </div>
+
+          <div class="help-text">
+            <strong><i class="fas fa-info-circle"></i> Comment faire :</strong><br>
+            1. Après avoir rechargé votre compteur<br>
+            2. Tapez le code <strong>813</strong> pour voir votre crédit<br>
+            3. Notez le montant que vous avez rechargé<br>
+            4. Entrez ces informations ci-dessous
+          </div>
+
+          <div class="form-group">
+            <label><i class="far fa-calendar-alt"></i> Date de recharge</label>
+            <input type="date" id="rechargeDate">
+          </div>
+
+          <div class="form-group">
+            <label><i class="fas fa-money-bill-alt"></i> Montant en FCFA</label>
+            <input type="number" id="rechargeAmount" placeholder="Ex: 5000">
+          </div>
+
+          <div class="form-group">
+            <label><i class="fas fa-bolt"></i> Unités reçues (kWh)</label>
+            <input type="number" id="rechargeUnits" step="0.1" placeholder="Ex: 45.2">
+          </div>
+
+          <button class="btn btn-large" onclick="addRecharge()">
+            <i class="fas fa-save"></i> Enregistrer la recharge
+          </button>
+        </div>
+      </div>
+
+      <div id="inputMessage" class="alert alert-success" style="display: none;">
+        <i class="fas fa-check-circle"></i> Données enregistrées avec succès !
+      </div>
+    </div>
+
+    <div id="history" class="page">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon"><i class="fas fa-chart-bar"></i></div>
+          <h2 class="card-title">Analyse de consommation</h2>
+        </div>
+
+        <div class="form-group">
+          <label><i class="far fa-calendar-alt"></i> Période d'analyse</label>
+          <select id="analysisPeriod" onchange="updateAnalysis()">
+            <option value="7days">7 derniers jours</option>
+            <option value="30days">30 derniers jours</option>
+            <option value="all">Toute la période</option>
+          </select>
+        </div>
+
         <div id="analysisResult" class="stats-grid" style="margin-bottom: 20px;">
           </div>
- 
-        <div class="chart-container"> 
+
+        <div class="chart-container">
          <canvas id="historyChart"></canvas>
-        </div> 
-      </div> 
- 
-      <div class="card"> 
-        <div class="card-header"> 
-          <div class="card-icon"><i class="fas fa-table"></i></div> 
-          <h2 class="card-title">Historique détaillé</h2> 
-        </div> 
- 
-        <table class="data-table"> 
-          <thead> 
-            <tr> 
-              <th>Date</th> 
-              <th>Consommation (kWh)</th> 
-              <th>Coût estimé (FCFA)</th> 
-              <th>Actions</th> 
-            </tr> 
-          </thead> 
-          <tbody id="historyTableBody"> 
-            </tbody> 
-        </table> 
+        </div>
       </div>
-      
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon"><i class="fas fa-table"></i></div>
+          <h2 class="card-title">Historique détaillé</h2>
+        </div>
+
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Consommation (kWh)</th>
+              <th>Coût estimé (FCFA)</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="historyTableBody">
+            </tbody>
+        </table>
+      </div>
+
       <div class="card">
         <div class="card-header">
           <div class="card-icon"><i class="fas fa-money-bill-wave"></i></div>
           <h2 class="card-title">Historique des recharges</h2>
         </div>
- 
+
         <table class="data-table">
           <thead>
             <tr>
@@ -251,11 +293,11 @@
             </tbody>
         </table>
       </div>
-      
-    </div> 
- 
-    <div id="settings" class="page"> 
-      
+
+    </div>
+
+    <div id="settings" class="page">
+
       <div class="card">
         <div class="card-header">
           <div class="card-icon"><i class="fas fa-palette"></i></div>
@@ -281,7 +323,7 @@
           </button>
         </div>
       </div>
-      
+
       <div class="card">
         <div class="card-header">
           <div class="card-icon"><i class="fas fa-question-circle"></i></div>
@@ -305,87 +347,145 @@
           </li>
         </ol>
       </div>
-      
-      <div class="form-grid"> 
-        <div class="card"> 
-          <div class="card-header"> 
-            <div class="card-icon"><i class="fas fa-euro-sign"></i></div> 
-            <h2 class="card-title">Configuration des tarifs</h2> 
-          </div> 
-     
-          <div class="alert alert-info"> 
+
+      <div class="form-grid">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon"><i class="fas fa-euro-sign"></i></div>
+            <h2 class="card-title">Configuration des tarifs & Objectifs</h2>
+          </div>
+
+          <div class="alert alert-info">
             <strong><i class="fas fa-info-circle"></i> Conseil :</strong> Utilisez le code <strong>809</strong> pour connaître votre type et sélectionnez-le ci-dessous.
-          </div> 
-     
-          <div class="form-group"> 
-            <label><i class="fas fa-home"></i> Votre type de tarif</label> 
+          </div>
+
+          <div class="form-group">
+            <label><i class="fas fa-home"></i> Votre type de tarif</label>
             <select id="tariffType">
               <option value="domestique-pp">01 - Domestique Petite Puissance</option>
               <option value="domestique-mp">02 - Domestique Moyenne Puissance</option>
               <option value="pro-pp">04 - Professionnel Petite Puissance</option>
               <option value="pro-mp">05 - Professionnel Moyenne Puissance</option>
             </select>
-          </div> 
-          
-          <div class="form-group"> 
-            <label><i class="fas fa-percentage"></i> TVA (%)</label> 
-            <input type="number" id="tva" step="0.1" value="18"> 
-          </div> 
-          
+          </div>
+
+          <div class="form-group">
+            <label><i class="fas fa-percentage"></i> TVA (%)</label>
+            <input type="number" id="tva" step="0.1" value="18">
+          </div>
+
           <div class="form-group">
             <label><i class="fas fa-bolt"></i> Crédit Actuel (kWh) - (Code 813)</label>
             <input type="number" id="currentCredit" step="0.1" placeholder="Ex: 50.5">
             <small>Mettez à jour ce champ si votre estimation se décale.</small>
           </div>
-     
-          <button class="btn btn-large" onclick="saveTariffs()"> 
-            <i class="fas fa-save"></i> Sauvegarder les tarifs 
-          </button> 
-        </div> 
- 
-        <div class="card"> 
-          <div class="card-header"> 
-            <div class="card-icon"><i class="fas fa-code"></i></div> 
-            <h2 class="card-title">Codes Woyofal de référence</h2> 
-          </div> 
- 
-          <div class="help-text"> 
-            <strong><i class="fas fa-info-circle"></i> Comment utiliser :</strong> Tapez ces codes sur votre compteur puis appuyez sur la touche verte.
-          </div> 
- 
-          <div class="code-reference"> 
-            <div class="code-item"> 
-              <div class="code-number">800</div> 
-              <div class="code-description">Consommation totale</div> 
-            </div> 
-            <div class="code-item"> 
-              <div class="code-number">813</div> 
-              <div class="code-description">Crédit restant</div> 
-            </div> 
-            <div class="code-item"> 
-              <div class="code-number">814</div> 
-              <div class="code-description">Consommation du jour</div> 
-            </div> 
-            <div class="code-item"> 
-              <div class="code-number">815</div> 
-              <div class="code-description">Consommation du mois</div> 
-            </div> 
-            <div class="code-item"> 
-              <div class="code-number">816</div> 
-              <div class="code-description">Historique recharges</div> 
-            </div> 
-            <div class="code-item"> 
-              <div class="code-number">808</div>
-              <div class="code-description">Consommation instantanée</div>
-            </div>
-          </div> 
+
+          <div class="form-group">
+            <label><i class="fas fa-bullseye"></i> Objectif Mensuel</label>
+            <select id="goalType" onchange="updateGoalLabel()">
+              <option value="fcfa">En FCFA</option>
+              <option value="kwh">En kWh</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label id="goalValueLabel"><i class="fas fa-calculator"></i> Valeur de l'objectif (FCFA)</label>
+            <input type="number" id="goalValue" step="1" placeholder="Ex: 10000">
+          </div>
+          <button class="btn btn-large" onclick="saveSettings()"> <i class="fas fa-save"></i> Sauvegarder les Paramètres
+          </button>
         </div>
-      </div> 
- 
-      <div id="settingsMessage" class="alert alert-success" style="display: none;"> 
-        <i class="fas fa-check-circle"></i> Paramètres sauvegardés avec succès ! 
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon"><i class="fas fa-code"></i></div>
+            <h2 class="card-title">Codes Woyofal Utiles</h2>
+          </div>
+
+          <div class="help-text">
+            <strong><i class="fas fa-info-circle"></i> Comment utiliser :</strong> Tapez le code sur votre compteur puis appuyez sur la touche verte.
+          </div>
+
+          <div class="code-reference">
+            <div class="code-item">
+              <div class="code-number">800</div>
+              <div class="code-description">Index Total (Consommation totale cumulée en kWh)</div>
+            </div>
+             <div class="code-item">
+              <div class="code-number">801</div>
+              <div class="code-description">Puissance Maximale (Pic enregistré en W)</div>
+            </div>
+             <div class="code-item">
+              <div class="code-number">802</div>
+              <div class="code-description">Numéro de Compteur (Identifiant unique)</div>
+            </div>
+             <div class="code-item">
+              <div class="code-number">803</div>
+              <div class="code-description">Tension (ex: 220V)</div>
+            </div>
+            <div class="code-item">
+              <div class="code-number">804</div>
+              <div class="code-description">Intensité (Ampérage en temps réel)</div>
+            </div>
+            <div class="code-item">
+              <div class="code-number">805</div>
+              <div class="code-description">Fréquence (ex: 50Hz)</div>
+            </div>
+            <div class="code-item">
+              <div class="code-number">806</div>
+              <div class="code-description">Puissance Active (Consommation actuelle en Watts)</div>
+            </div>
+            <div class="code-item">
+              <div class="code-number">807</div>
+              <div class="code-description">Date et Heure du Compteur</div>
+            </div>
+            <div class="code-item">
+              <div class="code-number">808</div>
+              <div class="code-description">Consommation Instantanée (Puissance en kW à l'instant T)</div>
+            </div>
+             <div class="code-item">
+              <div class="code-number">809</div>
+              <div class="code-description">Facteur de Puissance (Cos φ) ou Type de Tarif</div>
+            </div>
+            <div class="code-item">
+              <div class="code-number">810</div>
+              <div class="code-description">Statut des Tarifs (Palier actuel)</div>
+            </div>
+            <div class="code-item">
+              <div class="code-number">811</div>
+              <div class="code-description">Numéro du Dernier Jeton (Code de recharge utilisé)</div>
+            </div>
+            <div class="code-item">
+              <div class="code-number">812</div>
+              <div class="code-description">Statut du Compteur / Alarme sonore (on/off)</div>
+            </div>
+            <div class="code-item">
+              <div class="code-number">813</div>
+              <div class="code-description">Crédit Restant (Solde en kWh ou FCFA)</div>
+            </div>
+            <div class="code-item">
+              <div class="code-number">814</div>
+              <div class="code-description">Consommation du Jour (en kWh)</div>
+            </div>
+            <div class="code-item">
+              <div class="code-number">815</div>
+              <div class="code-description">Consommation du Mois (en kWh)</div>
+            </div>
+            <div class="code-item">
+              <div class="code-number">816</div>
+              <div class="code-description">Historique des Recharges (Montants et dates)</div>
+            </div>
+            <div class="code-item">
+              <div class="code-number">817</div>
+              <div class="code-description">Alarmes crédit faible (Seuil d'alerte)</div>
+            </div>
+          </div>
+        </div>
       </div>
-      
+
+      <div id="settingsMessage" class="alert alert-success" style="display: none;">
+        <i class="fas fa-check-circle"></i> Paramètres sauvegardés avec succès !
+      </div>
+
       <div class="card">
         <div class="card-header">
           <div class="card-icon"><i class="fas fa-database"></i></div>
@@ -395,31 +495,31 @@
         <div class="alert alert-info">
           Exportez un rapport simple, ou sauvegardez vos données pour les recharger plus tard.
         </div>
-        
+
         <div class="quick-actions data-actions-grid" style="margin-top: 0;">
-          
+
           <a href="#" class="quick-action" onclick="exportAsTXT(event)">
             <div class="quick-action-icon"><i class="fas fa-file-alt"></i></div>
             <div>Exporter en Fichier Texte</div>
           </a>
-          
+
           <a href="#" class="quick-action" onclick="exportData(event)">
             <div class="quick-action-icon"><i class="fas fa-save"></i></div>
             <div>Sauvegarder (pour l'app)</div>
           </a>
-          
+
           <label for="fileImport" class="quick-action" style="cursor: pointer;">
             <div class="quick-action-icon"><i class="fas fa-upload"></i></div>
             <div>Charger ma sauvegarde</div>
           </label>
           <input type="file" id="fileImport" onchange="importData(event)" accept=".json" style="display: none;">
-          
+
           <a href="#" class="quick-action" onclick="resetData(event)" style="border-color: var(--color-danger); color: var(--color-danger);">
             <div class="quick-action-icon" style="color: var(--color-danger);"><i class="fas fa-trash-alt"></i></div>
             <div>Réinitialiser (Danger)</div>
           </a>
         </div>
-        
+
         <div id="importMessage" class="alert alert-success" style="display: none; margin-top: 15px;">
           <i class="fas fa-check-circle"></i> Données importées avec succès !
         </div>
@@ -427,7 +527,7 @@
           <i class="fas fa-check-circle"></i> Données réinitialisées avec succès !
         </div>
       </div>
-      
+
     </div>
   </div>
 </div>
