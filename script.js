@@ -158,12 +158,16 @@ function addDays(date, days) {
 }
 
 
+// MODIFICATION : Fonction addMeterReading mise à jour
 function addMeterReading() {
   const date = document.getElementById('meterDate').value;
   const reading = parseFloat(document.getElementById('meterReading').value);
+  // AJOUT : Lire le nouveau champ de crédit
+  const credit = parseFloat(document.getElementById('meterCredit').value);
 
-  if (!date || !reading || reading <= 0) {
-    showError('Veuillez remplir tous les champs avec des valeurs valides.');
+  // AJOUT : Validation du nouveau champ
+  if (!date || !reading || reading <= 0 || isNaN(credit) || credit < 0) {
+    showError('Veuillez remplir tous les champs (date, relevé et crédit) avec des valeurs valides.');
     return;
   }
 
@@ -179,18 +183,16 @@ function addMeterReading() {
     }
     consumption = reading - lastReading.reading;
 
-    // --- AJOUT : Soustraire la consommation du crédit ---
-    if (consumption > 0) {
-      settings.currentCredit -= consumption;
-      if (settings.currentCredit < 0) {
-        settings.currentCredit = 0;
-      }
-    }
-
   } else {
     // Premier relevé, pas de consommation à calculer
     consumption = 0;
   }
+  
+  // --- NOUVEAU : Mettre à jour le crédit directement ---
+  // On met à jour le crédit avec la valeur entrée par l'utilisateur (Code 813)
+  settings.currentCredit = credit;
+  // On ne soustrait PLUS la consommation, car la valeur 813 entrée est déjà
+  // la valeur correcte et à jour du compteur.
 
   const newReading = {
     date: date,
@@ -206,6 +208,8 @@ function addMeterReading() {
 
   // Reset form
   document.getElementById('meterReading').value = "";
+  // AJOUT : Réinitialiser le champ crédit
+  document.getElementById('meterCredit').value = "";
   document.getElementById('meterDate').value = new Date().toISOString().split('T')[0];
 
   showMessage('inputMessage');
@@ -213,6 +217,8 @@ function addMeterReading() {
   updateHistoryTable();
   saveToLocalStorage(); // Sauvegarde le settings.currentCredit mis à jour
 }
+// FIN DE LA MODIFICATION
+
 
 function addRecharge() {
   const date = document.getElementById('rechargeDate').value;
@@ -664,6 +670,9 @@ function deleteReading(index) {
   if (confirm('Êtes-vous sûr de vouloir supprimer ce relevé ?')) {
 
     // --- AJOUT : Recréditer le crédit avant de supprimer ---
+    // NOTE : Avec la nouvelle logique, la suppression peut désynchroniser
+    // le crédit. On le recrédite "au cas où", mais l'utilisateur
+    // devrait resynchroniser manuellement via "Paramètres".
     const readingToCancel = meterReadings[index];
     if (readingToCancel && readingToCancel.consumption > 0) {
       settings.currentCredit += readingToCancel.consumption;

@@ -171,7 +171,8 @@
             1. Allez devant votre compteur Senelec<br>
             2. Tapez le code <strong>800</strong> puis appuyez sur la touche verte<br>
             3. Notez le nombre qui s'affiche (ex: 1245.7 kWh)<br>
-            4. Entrez cette valeur ci-dessous
+            4. Tapez le code <strong>813</strong> pour voir votre crédit (ex: 40.5 kWh)<br>
+            5. Entrez ces deux valeurs ci-dessous
           </div>
 
           <div class="form-group">
@@ -180,10 +181,14 @@
           </div>
 
           <div class="form-group">
-            <label><i class="fas fa-bolt"></i> Valeur du compteur (kWh)</label>
+            <label><i class="fas fa-bolt"></i> Valeur du compteur (Code 800)</label>
             <input type="number" id="meterReading" step="0.1" placeholder="Ex: 1245.7">
           </div>
-
+          
+          <div class="form-group">
+            <label><i class="fas fa-battery-half"></i> Crédit Restant (Code 813)</label>
+            <input type="number" id="meterCredit" step="0.1" placeholder="Ex: 40.5">
+          </div>
           <button class="btn btn-large" onclick="addMeterReading()">
             <i class="fas fa-save"></i> Enregistrer le relevé
           </button>
@@ -542,7 +547,7 @@
             console.log('ServiceWorker enregistré avec succès !');
           })
           .catch(err => {
-            console.log('Échec de l\'enregistrement du ServiceWorker: ', err);
+            console.log('Échec de l'enregistrement du ServiceWorker: ', err); 
           });
       });
     }
