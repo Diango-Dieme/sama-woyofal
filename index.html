@@ -169,9 +169,9 @@
           <div class="help-text">
             <strong><i class="fas fa-info-circle"></i> Comment faire :</strong><br>
             1. Allez devant votre compteur Senelec<br>
-            2. Tapez le code <strong>800</strong> puis appuyez sur la touche verte<br>
+            2. Tapez un code d'Index/Relevé (ex: <strong>ancien 800</strong>)<br>
             3. Notez le nombre qui s'affiche (ex: 1245.7 kWh)<br>
-            4. Tapez le code <strong>813</strong> pour voir votre crédit (ex: 40.5 kWh)<br>
+            4. Tapez le code <strong>802</strong> pour voir votre crédit (ex: 40.5 kWh)<br>
             5. Entrez ces deux valeurs ci-dessous
           </div>
 
@@ -181,14 +181,15 @@
           </div>
 
           <div class="form-group">
-            <label><i class="fas fa-bolt"></i> Valeur du compteur (Code 800)</label>
+            <label><i class="fas fa-bolt"></i> Valeur du compteur (Index Total)</label>
             <input type="number" id="meterReading" step="0.1" placeholder="Ex: 1245.7">
           </div>
           
           <div class="form-group">
-            <label><i class="fas fa-battery-half"></i> Crédit Restant (Code 813)</label>
+            <label><i class="fas fa-battery-half"></i> Crédit Restant (Code 802)</label>
             <input type="number" id="meterCredit" step="0.1" placeholder="Ex: 40.5">
           </div>
+
           <button class="btn btn-large" onclick="addMeterReading()">
             <i class="fas fa-save"></i> Enregistrer le relevé
           </button>
@@ -203,7 +204,7 @@
           <div class="help-text">
             <strong><i class="fas fa-info-circle"></i> Comment faire :</strong><br>
             1. Après avoir rechargé votre compteur<br>
-            2. Tapez le code <strong>813</strong> pour voir votre crédit<br>
+            2. Tapez le code <strong>802</strong> pour voir votre nouveau crédit<br>
             3. Notez le montant que vous avez rechargé<br>
             4. Entrez ces informations ci-dessous
           </div>
@@ -380,7 +381,7 @@
           </div>
 
           <div class="form-group">
-            <label><i class="fas fa-bolt"></i> Crédit Actuel (kWh) - (Code 813)</label>
+            <label><i class="fas fa-bolt"></i> Crédit Actuel (kWh) - (Code 802)</label>
             <input type="number" id="currentCredit" step="0.1" placeholder="Ex: 50.5">
             <small>Mettez à jour ce champ si votre estimation se décale.</small>
           </div>
@@ -412,79 +413,83 @@
 
           <div class="code-reference">
             <div class="code-item">
-              <div class="code-number">800</div>
-              <div class="code-description">Index Total (Consommation totale cumulée en kWh)</div>
-            </div>
-             <div class="code-item">
               <div class="code-number">801</div>
-              <div class="code-description">Puissance Maximale (Pic enregistré en W)</div>
+              <div class="code-description">Crédit restant (Solde en FCFA)</div>
             </div>
              <div class="code-item">
               <div class="code-number">802</div>
-              <div class="code-description">Numéro de Compteur (Identifiant unique)</div>
+              <div class="code-description">Crédit restant en kWh</div>
             </div>
              <div class="code-item">
               <div class="code-number">803</div>
-              <div class="code-description">Tension (ex: 220V)</div>
-            </div>
-            <div class="code-item">
-              <div class="code-number">804</div>
-              <div class="code-description">Intensité (Ampérage en temps réel)</div>
-            </div>
-            <div class="code-item">
-              <div class="code-number">805</div>
-              <div class="code-description">Fréquence (ex: 50Hz)</div>
-            </div>
-            <div class="code-item">
-              <div class="code-number">806</div>
-              <div class="code-description">Puissance Active (Consommation actuelle en Watts)</div>
-            </div>
-            <div class="code-item">
-              <div class="code-number">807</div>
-              <div class="code-description">Date et Heure du Compteur</div>
-            </div>
-            <div class="code-item">
-              <div class="code-number">808</div>
-              <div class="code-description">Consommation Instantanée (Puissance en kW à l'instant T)</div>
+              <div class="code-description">Crédit restant en jours (Estimé)</div>
             </div>
              <div class="code-item">
-              <div class="code-number">809</div>
-              <div class="code-description">Facteur de Puissance (Cos φ) ou Type de Tarif</div>
-            </div>
-            <div class="code-item">
-              <div class="code-number">810</div>
-              <div class="code-description">Statut des Tarifs (Palier actuel)</div>
-            </div>
-            <div class="code-item">
-              <div class="code-number">811</div>
-              <div class="code-description">Numéro du Dernier Jeton (Code de recharge utilisé)</div>
-            </div>
-            <div class="code-item">
               <div class="code-number">812</div>
-              <div class="code-description">Statut du Compteur / Alarme sonore (on/off)</div>
+              <div class="code-description">Consommation du mois en cours (kWh)</div>
             </div>
             <div class="code-item">
               <div class="code-number">813</div>
-              <div class="code-description">Crédit Restant (Solde en kWh ou FCFA)</div>
+              <div class="code-description">Consommation du jour (kWh)</div>
             </div>
             <div class="code-item">
-              <div class="code-number">814</div>
-              <div class="code-description">Consommation du Jour (en kWh)</div>
+              <div class="code-number">820</div>
+              <div class="code-description">Consommation du mois précédent (kWh)</div>
+            </div>
+            <div class="code-item">
+              <div class="code-number">821</div>
+              <div class="code-description">Consommation de l’avant-dernier mois (kWh)</div>
+            </div>
+            <div class="code-item">
+              <div class="code-number">822</div>
+              <div class="code-description">Consommation de l’année en cours (Total)</div>
+            </div>
+            <div class="code-item">
+              <div class="code-number">804</div>
+              <div class="code-description">Puissance instantanée (Watts)</div>
+            </div>
+             <div class="code-item">
+              <div class="code-number">805</div>
+              <div class="code-description">Tension actuelle (Volts)</div>
+            </div>
+            <div class="code-item">
+              <div class="code-number">806</div>
+              <div class="code-description">Intensité (Ampères)</div>
+            </div>
+            <div class="code-item">
+              <div class="code-number">807</div>
+              <div class="code-description">Facteur de puissance (cos φ)</div>
+            </div>
+            <div class="code-item">
+              <div class="code-number">808</div>
+              <div class="code-description">Puissance maximale du jour (Watts)</div>
+            </div>
+            <div class="code-item">
+              <div class="code-number">809</div>
+              <div class="code-description">Heure et date du compteur</div>
+            </div>
+            <div class="code-item">
+              <div class="code-number">810</div>
+              <div class="code-description">Numéro du compteur (UID)</div>
+            </div>
+            <div class="code-item">
+              <div class="code-number">811</div>
+              <div class="code-description">Dernier rechargement (montant + date)</div>
             </div>
             <div class="code-item">
               <div class="code-number">815</div>
-              <div class="code-description">Consommation du Mois (en kWh)</div>
+              <div class="code-description">État du relais (ON/OFF)</div>
             </div>
-            <div class="code-item">
+             <div class="code-item">
               <div class="code-number">816</div>
-              <div class="code-description">Historique des Recharges (Montants et dates)</div>
+              <div class="code-description">Version du logiciel du compteur</div>
             </div>
-            <div class="code-item">
-              <div class="code-number">817</div>
-              <div class="code-description">Alarmes crédit faible (Seuil d'alerte)</div>
+             <div class="code-item">
+              <div class="code-number">000</div>
+              <div class="code-description">Réinitialise l’écran (si bloqué)</div>
             </div>
           </div>
-        </div>
+          </div>
       </div>
 
       <div id="settingsMessage" class="alert alert-success" style="display: none;">
@@ -547,7 +552,7 @@
             console.log('ServiceWorker enregistré avec succès !');
           })
           .catch(err => {
-            console.log('Échec de l'enregistrement du ServiceWorker: ', err); 
+            console.log('Échec de l'enregistrement du ServiceWorker: ', err);
           });
       });
     }
