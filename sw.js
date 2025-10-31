@@ -7,13 +7,16 @@ const urlsToCache = [
   'index.html',
   'style.css',
   'script.js',
-  'manifest.json',
-  'icon-192.png',
-  'icon-512.png',
+  'site.webmanifest', // CHANGÉ
+  'android-chrome-192x192.png', // CHANGÉ
+  'android-chrome-512x512.png', // CHANGÉ
+  'apple-touch-icon.png', // AJOUTÉ
+  'favicon.ico', // AJOUTÉ
+  'favicon-16x16.png', // AJOUTÉ
+  'favicon-32x32.png', // AJOUTÉ
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
   'https://cdn.jsdelivr.net/npm/chart.js'
 ];
-
 // 1. Installation du Service Worker (Mise en cache)
 self.addEventListener('install', event => {
   event.waitUntil(

@@ -5,10 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sama-Woyofal</title>
 
-  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+  <link rel="manifest" href="site.webmanifest">
+  <link rel="shortcut icon" href="favicon.ico">
   <meta name="theme-color" content="#007AFF">
-  <link rel="apple-touch-icon" href="icon-192.png">
-
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -169,7 +171,7 @@
           <div class="help-text">
             <strong><i class="fas fa-info-circle"></i> Comment faire :</strong><br>
             1. Allez devant votre compteur Senelec<br>
-            2. Tapez un code d'Index/Relevé (ex: <strong>ancien 800</strong>)<br>
+            2. Tapez le code <strong>800</strong> puis appuyez sur la touche verte ou rouge<br>
             3. Notez le nombre qui s'affiche (ex: 1245.7 kWh)<br>
             4. Tapez le code <strong>802</strong> pour voir votre crédit (ex: 40.5 kWh)<br>
             5. Entrez ces deux valeurs ci-dessous
@@ -412,6 +414,10 @@
           </div>
 
           <div class="code-reference">
+            <div class="code-item">
+              <div class="code-number">800</div>
+              <div class="code-description">Index Total (Consommation totale cumulée en kWh)</div>
+            </div>
             <div class="code-item">
               <div class="code-number">801</div>
               <div class="code-description">Crédit restant (Solde en FCFA)</div>
