@@ -15,7 +15,8 @@ let settings = {
   currentCredit: 0, // Ajout pour le suivi de crédit
   theme: 'system', // Ajout pour le thème
   goalType: 'fcfa', // AJOUT ('fcfa' ou 'kwh')
-  goalValue: 0      // AJOUT (valeur numérique)
+  goalValue: 0,      // AJOUT (valeur numérique)
+  notificationsEnabled: false // AJOUT (pour les notifications)
 };
 
 // Chart instance
@@ -189,9 +190,9 @@ function addMeterReading() {
   }
   
   // --- NOUVEAU : Mettre à jour le crédit directement ---
-  // On met à jour le crédit avec la valeur entrée par l'utilisateur (Code 813)
+  // On met à jour le crédit avec la valeur entrée par l'utilisateur (Code 801)
   settings.currentCredit = credit;
-  // On ne soustrait PLUS la consommation, car la valeur 813 entrée est déjà
+  // On ne soustrait PLUS la consommation, car la valeur 801 entrée est déjà
   // la valeur correcte et à jour du compteur.
 
   const newReading = {
@@ -474,6 +475,19 @@ function updateDashboard() {
   if (dailyAverage > 0 && settings.currentCredit > 0) {
     daysRemaining = settings.currentCredit / dailyAverage;
     daysDisplay.textContent = Math.floor(daysRemaining); // Arrondir aux jours pleins
+
+    // --- DÉBUT DE L'AJOUT POUR LES NOTIFICATIONS ---
+    if (daysRemaining <= 3 && settings.notificationsEnabled) {
+      // On vérifie si on a déjà envoyé une alerte aujourd'hui pour ne pas spammer
+      const lastAlertDate = localStorage.getItem('lastCreditAlert');
+      const today = new Date().toISOString().split('T')[0];
+
+      if (lastAlertDate !== today) {
+        showLowCreditNotification(Math.floor(daysRemaining));
+        localStorage.setItem('lastCreditAlert', today); // Marquer comme envoyé
+      }
+    }
+    // --- FIN DE L'AJOUT ---
 
     // Changer couleur jours restants
     if (daysRemaining <= 3) {
@@ -1039,4 +1053,98 @@ function resetData(event) {
 
     showMessage('resetMessage');
   }
+}
+
+// =================================================================
+// --- NOUVELLES FONCTIONS POUR LES NOTIFICATIONS ---
+// =================================================================
+
+/**
+ * Demande la permission d'envoyer des notifications
+ */
+function requestNotificationPermission() {
+  if (!('Notification' in window)) {
+    showError("Votre navigateur ne supporte pas les notifications.");
+    return;
+  }
+
+  Notification.requestPermission().then(permission => {
+    if (permission === 'granted') {
+      settings.notificationsEnabled = true;
+      saveToLocalStorage();
+      // Utilise le message de succès 'notificationMessage' ajouté dans index.html
+      showMessage('notificationMessage'); 
+    } else {
+      showError("Autorisation de notification refusée.");
+      settings.notificationsEnabled = false;
+      saveToLocalStorage();
+    }
+  });
+}
+
+/**
+ * Affiche la notification de crédit bas via le Service Worker
+ */
+function showLowCreditNotification(daysLeft) {
+  if (!('Notification' in window) || Notification.permission !== 'granted' || !('serviceWorker' in navigator)) {
+    return; // Ne rien faire si ce n'est pas autorisé ou supporté
+  }
+
+  // On utilise le Service Worker pour afficher l'alerte
+  // C'est ce qui permet de le faire même si l'onglet est fermé
+  navigator.serviceWorker.ready.then(registration => {
+    registration.showNotification('Sama-Woyofal - Crédit Faible !', {
+      body: `Attention, il ne vous reste qu'environ ${daysLeft} jours de crédit. Pensez à recharger !`,
+      icon: 'icon-192.png', // L'icône de votre PWA
+      badge: 'icon-192.png', // Pour Android
+      vibrate: [200, 100, 200], // Vibration
+      tag: 'low-credit-alert' // Pour ne pas empiler 100 alertes identiques
+    });
+  });
+}
+
+// =================================================================
+// --- NOUVELLE FONCTION POUR LE TESTEUR DE PUISSANCE (CODE 808) ---
+// =================================================================
+function calculatePowerTest() {
+  const base = parseFloat(document.getElementById('powerBase').value);
+  const test = parseFloat(document.getElementById('powerTest').value);
+  const resultDiv = document.getElementById('powerResult');
+
+  // Validation
+  if (isNaN(base) || isNaN(test) || base < 0 || test < 0) {
+    showError("Veuillez entrer des valeurs valides (en Watts).");
+    resultDiv.style.display = 'none';
+    return;
+  }
+
+  if (test <= base) {
+    showError("La 'Puissance de TEST' doit être supérieure à la 'Puissance de BASE'.");
+    resultDiv.style.display = 'none';
+    return;
+  }
+
+  const applianceWatts = test - base;
+  const applianceKW = applianceWatts / 1000; // Conversion Watts en KiloWatts
+
+  // Calcul du coût : on utilise le tarif Tranche 2 (le plus cher)
+  // car c'est une consommation "bonus"
+  const tariffs = TARIFF_GRID[settings.tariffType] || TARIFF_GRID["domestique-pp"];
+  const t2_price = tariffs.t2; // Tarif Tranche 2
+  const tva = settings.tva / 100;
+  
+  const costPerKWH = t2_price * (1 + tva);
+  
+  // Coût pour 1 heure d'utilisation
+  const costPerHour = applianceKW * costPerKWH;
+
+  // Affichage du résultat
+  resultDiv.innerHTML = `
+    <h4><i class="fas fa-bolt"></i> Résultat de l'analyse</h4>
+    <p>Votre appareil consomme : <strong>${applianceWatts.toFixed(0)} Watts</strong> (soit ${applianceKW.toFixed(2)} kW)</p>
+    <p style="font-size: 1.1em; font-weight: 600;">
+      Coût estimé : <strong>${Math.round(costPerHour)} FCFA par heure d'utilisation.</strong>
+    </p>
+  `;
+  resultDiv.style.display = 'block';
 }

@@ -1,4 +1,3 @@
-
 :root {
   /* Polices */
   --font-family-sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
@@ -238,6 +237,7 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 30px;
+  margin-bottom: 24px; /* Ajout d'un margin-bottom pour espacer la nouvelle carte */
 }
 
 .form-group {
@@ -934,4 +934,24 @@ html.theme-dark {
     #rechargePredictionDate {
         font-size: 1.2em;
     }
+}
+
+/* =================================================================
+   12. STYLES POUR LE TESTEUR DE PUISSANCE (Ajout)
+   ================================================================= */
+
+#powerResult h4 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-weight: 700;
+  color: inherit; /* Garde la couleur de l'alerte (succès) */
+}
+
+#powerResult p {
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+#powerResult p:last-child {
+  margin-bottom: 0;
 }

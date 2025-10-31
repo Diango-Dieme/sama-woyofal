@@ -7,16 +7,13 @@ const urlsToCache = [
   'index.html',
   'style.css',
   'script.js',
-  'site.webmanifest', // CHANGÉ
-  'android-chrome-192x192.png', // CHANGÉ
-  'android-chrome-512x512.png', // CHANGÉ
-  'apple-touch-icon.png', // AJOUTÉ
-  'favicon.ico', // AJOUTÉ
-  'favicon-16x16.png', // AJOUTÉ
-  'favicon-32x32.png', // AJOUTÉ
+  'manifest.json',
+  'icon-192.png',
+  'icon-512.png',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
   'https://cdn.jsdelivr.net/npm/chart.js'
 ];
+
 // 1. Installation du Service Worker (Mise en cache)
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -56,6 +53,28 @@ self.addEventListener('activate', event => {
           }
         })
       );
+    })
+  );
+});
+
+// 4. Gérer le clic sur la notification (NOUVEAU BLOC)
+self.addEventListener('notificationclick', event => {
+  event.notification.close(); // Ferme la notification
+
+  // Ouvre l'application (ou ramène l'onglet au premier plan)
+  event.waitUntil(
+    clients.matchAll({ type: 'window' }).then(clientList => {
+      // Si l'app est déjà ouverte, on la focus
+      for (const client of clientList) {
+        // Vérifie si le client est l'app (l'URL peut être '/' ou '/index.html')
+        if ((client.url === self.location.origin + '/' || client.url === self.location.origin + '/index.html') && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      // Sinon, on l'ouvre
+      if (clients.openWindow) {
+        return clients.openWindow('.'); // Ouvre la page index.html
+      }
     })
   );
 });
